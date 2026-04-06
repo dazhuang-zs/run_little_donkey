@@ -1,0 +1,189 @@
+{
+  "events": [
+    {
+      "event_code": "rent_increase",
+      "title": "房租涨价",
+      "description": "房东通知你下个月房租要涨300元，爱住不住。",
+      "trigger_type": "random",
+      "min_day": 5,
+      "max_day": 25,
+      "weight": 15,
+      "choices": [
+        {
+          "choice_text": "接受涨价，继续住",
+          "effect_money": -300,
+          "effect_health": 0,
+          "effect_stress": 10,
+          "effect_hunger": 0,
+          "effect_energy": 0,
+          "effect_job_satisfaction": 0,
+          "effect_relationship": 0
+        },
+        {
+          "choice_text": "寻找更便宜的房子",
+          "effect_money": -500,
+          "effect_health": -5,
+          "effect_stress": 5,
+          "effect_hunger": 0,
+          "effect_energy": -20,
+          "effect_job_satisfaction": 0,
+          "effect_relationship": 0
+        },
+        {
+          "choice_text": "和房东谈判",
+          "effect_money": -150,
+          "effect_health": 0,
+          "effect_stress": -5,
+          "effect_hunger": 0,
+          "effect_energy": -10,
+          "effect_job_satisfaction": 0,
+          "effect_relationship": 5
+        }
+      ]
+    },
+    {
+      "event_code": "boss_pie",
+      "title": "老板画饼",
+      "description": "老板在会议上说年底给大家涨工资，你觉得可信吗？",
+      "trigger_type": "random",
+      "min_day": 3,
+      "max_day": 20,
+      "weight": 20,
+      "choices": [
+        {
+          "choice_text": "相信老板，努力工作",
+          "effect_money": 0,
+          "effect_health": -5,
+          "effect_stress": -5,
+          "effect_hunger": 0,
+          "effect_energy": -10,
+          "effect_job_satisfaction": 15,
+          "effect_relationship": 0
+        },
+        {
+          "choice_text": "保持怀疑，按部就班",
+          "effect_money": 0,
+          "effect_health": 0,
+          "effect_stress": 0,
+          "effect_hunger": 0,
+          "effect_energy": 0,
+          "effect_job_satisfaction": -5,
+          "effect_relationship": 0
+        },
+        {
+          "choice_text": "当面吐槽",
+          "effect_money": 0,
+          "effect_health": 0,
+          "effect_stress": 20,
+          "effect_hunger": 0,
+          "effect_energy": 0,
+          "effect_job_satisfaction": -20,
+          "effect_relationship": 0
+        }
+      ]
+    },
+    {
+      "event_code": "sick",
+      "title": "感冒了",
+      "description": "天气突变，你不小心感冒了，感觉很不舒服。",
+      "trigger_type": "conditional",
+      "min_day": 1,
+      "max_day": 30,
+      "weight": 10,
+      "choices": [
+        {
+          "choice_text": "去医院看病",
+          "effect_money": -200,
+          "effect_health": 30,
+          "effect_stress": -5,
+          "effect_hunger": 0,
+          "effect_energy": 10,
+          "effect_job_satisfaction": 0,
+          "effect_relationship": 0
+        },
+        {
+          "choice_text": "去药店买药",
+          "effect_money": -50,
+          "effect_health": 15,
+          "effect_stress": 0,
+          "effect_hunger": 0,
+          "effect_energy": 5,
+          "effect_job_satisfaction": 0,
+          "effect_relationship": 0
+        },
+        {
+          "choice_text": "硬扛过去",
+          "effect_money": 0,
+          "effect_health": -15,
+          "effect_stress": 10,
+          "effect_hunger": 0,
+          "effect_energy": -20,
+          "effect_job_satisfaction": 0,
+          "effect_relationship": 0
+        }
+      ]
+    },
+    {
+      "event_code": "bonus",
+      "title": "意外之财",
+      "description": "你在路边捡到一个钱包，里面有一些钱和身份证。",
+      "trigger_type": "random",
+      "min_day": 1,
+      "max_day": 30,
+      "weight": 5,
+      "choices": [
+        {
+          "choice_text": "交给警察",
+          "effect_money": 0,
+          "effect_health": 0,
+          "effect_stress": -10,
+          "effect_hunger": 0,
+          "effect_energy": 0,
+          "effect_job_satisfaction": 0,
+          "effect_relationship": 10
+        },
+        {
+          "choice_text": "自己留下",
+          "effect_money": 500,
+          "effect_health": 0,
+          "effect_stress": 15,
+          "effect_hunger": 0,
+          "effect_energy": 0,
+          "effect_job_satisfaction": 0,
+          "effect_relationship": -10
+        }
+      ]
+    },
+    {
+      "event_code": "overtime_request",
+      "title": "临时加班",
+      "description": "老板临时通知今晚要加班赶项目，有加班费。",
+      "trigger_type": "random",
+      "min_day": 1,
+      "max_day": 25,
+      "weight": 25,
+      "choices": [
+        {
+          "choice_text": "接受加班",
+          "effect_money": 200,
+          "effect_health": -10,
+          "effect_stress": 15,
+          "effect_hunger": 10,
+          "effect_energy": -30,
+          "effect_job_satisfaction": 10,
+          "effect_relationship": 0
+        },
+        {
+          "choice_text": "拒绝加班",
+          "effect_money": 0,
+          "effect_health": 0,
+          "effect_stress": -5,
+          "effect_hunger": 0,
+          "effect_energy": 10,
+          "effect_job_satisfaction": -15,
+          "effect_relationship": 0
+        }
+      ]
+    }
+  ]
+}
