@@ -28,16 +28,14 @@ class EventInDB(EventBase):
     """数据库中的事件模型"""
     id: int
 
-    class Config:
-        orm_mode = True
+    model_config = {"from_attributes": True}
 
 
 class Event(EventBase):
     """返回给客户端的事件模型"""
     id: int
 
-    class Config:
-        orm_mode = True
+    model_config = {"from_attributes": True}
 
 
 class EventChoiceBase(BaseModel):
@@ -65,8 +63,7 @@ class EventChoiceInDB(EventChoiceBase):
     id: int
     event_id: int
 
-    class Config:
-        orm_mode = True
+    model_config = {"from_attributes": True}
 
 
 class EventChoice(EventChoiceBase):
@@ -74,8 +71,7 @@ class EventChoice(EventChoiceBase):
     id: int
     event_id: int
 
-    class Config:
-        orm_mode = True
+    model_config = {"from_attributes": True}
 
 
 class EventWithChoices(Event):

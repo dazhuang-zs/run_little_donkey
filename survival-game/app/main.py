@@ -8,8 +8,7 @@ from fastapi.staticfiles import StaticFiles
 import uvicorn
 
 from app.config import settings
-from app.database import engine
-from app.models.db_models import Base
+from app.database import engine, Base
 from app.routers import auth, game, events
 
 # 创建数据库表（开发环境）

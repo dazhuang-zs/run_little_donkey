@@ -6,7 +6,7 @@ from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, Foreign
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
-from app.database import Base
+from app.database import Base, engine
 
 
 class PlayerDB(Base):
@@ -44,7 +44,7 @@ class GameStateDB(Base):
     energy = Column(Integer, default=100)
     job_level = Column(Integer, default=1)
     job_satisfaction = Column(Integer, default=50)
-    relationship = Column(Integer, default=50)
+    relationship_score = Column(Integer, default=50)
     is_game_over = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
