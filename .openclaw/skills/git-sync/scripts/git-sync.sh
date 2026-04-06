@@ -12,11 +12,12 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # 默认配置
-MEMORY_FILES="MEMORY.md memory/*.md"
+MEMORY_DIR=".openclaw/memory"
+MEMORY_FILES=".openclaw/MEMORY.md .openclaw/memory/*.md"
 AUTO_COMMIT_MEMORY=true
 AUTO_PUSH=true
-COMMIT_PREFIX="[git-sync]"
-MEMORY_DIR="memory"
+COMMIT_PREFIX="[sync]"
+DEVELOPMENT_GUIDE=".openclaw/DEVELOPMENT.md"
 
 # 帮助信息
 show_help() {
@@ -30,6 +31,7 @@ show_help() {
     echo "  push-memory       仅推送 Memory 文件"
     echo "  pull-memory       仅拉取 Memory 文件"
     echo "  init              初始化 Memory 目录结构"
+    echo "  guide             显示开发准则"
     echo "  help              显示帮助信息"
     echo ""
     echo "示例:"
@@ -46,16 +48,32 @@ check_git_repo() {
     fi
 }
 
+# 显示开发准则
+show_guide() {
+    if [ -f "$DEVELOPMENT_GUIDE" ]; then
+        cat "$DEVELOPMENT_GUIDE"
+    else
+        echo -e "${YELLOW}开发准则文件不存在: $DEVELOPMENT_GUIDE${NC}"
+        echo "请先执行 init 命令初始化"
+    fi
+}
+
 # 初始化 Memory 目录结构
 init_memory() {
     echo -e "${BLUE}初始化 Memory 目录结构...${NC}"
     
+    # 创建 .openclaw 目录
+    mkdir -p ".openclaw"
+    
     # 创建 memory 目录
     mkdir -p "$MEMORY_DIR"
     
+    # 创建 skills 目录
+    mkdir -p ".openclaw/skills/git-sync/scripts"
+    
     # 创建 MEMORY.md（如果不存在）
-    if [ ! -f "MEMORY.md" ]; then
-        cat > MEMORY.md << 'EOF'
+    if [ ! -f ".openclaw/MEMORY.md" ]; then
+        cat > .openclaw/MEMORY.md << 'EOF'
 # MEMORY.md - 长期记忆
 
 ## 项目概述
@@ -85,7 +103,7 @@ init_memory() {
 - 进度: 
 
 EOF
-        echo -e "${GREEN}创建 MEMORY.md${NC}"
+        echo -e "${GREEN}创建 .openclaw/MEMORY.md${NC}"
     fi
     
     # 创建每日日志文件
@@ -139,11 +157,71 @@ EOF
 
 ## 注意事项
 
+
+## 下一步
+
 EOF
         echo -e "${GREEN}创建 $MEMORY_DIR/context.md${NC}"
     fi
     
+    # 创建开发准则
+    if [ ! -f "$DEVELOPMENT_GUIDE" ]; then
+        cat > "$DEVELOPMENT_GUIDE" << 'GUIDE_EOF'
+# 开发准则
+
+## Git 提交规范
+
+### 提交信息格式
+
+```
+<type>(<scope>): <subject>
+```
+
+### Type 类型
+
+| Type | 说明 |
+|------|------|
+| feat | 新功能 |
+| fix | Bug 修复 |
+| docs | 文档更新 |
+| refactor | 重构 |
+| sync | git-sync 同步操作 |
+
+## 分支命名规范
+
+| 分支类型 | 命名格式 | 示例 |
+|----------|----------|------|
+| 主分支 | main | main |
+| 功能分支 | feature/<name> | feature/user-auth |
+| 修复分支 | fix/<name> | fix/login-bug |
+
+## 协同工作流
+
+1. 开始工作前: sync
+2. 工作中: 定期 checkpoint
+3. 结束工作时: sync
+4. 切换环境时: resume
+
+## 禁止事项
+
+1. 不要在 Memory 中写入敏感信息
+2. 不要直接在 main 分支开发
+3. 不要提交未测试的代码
+GUIDE_EOF
+        echo -e "${GREEN}创建 $DEVELOPMENT_GUIDE${NC}"
+    fi
+    
     echo -e "${GREEN}初始化完成！${NC}"
+    echo ""
+    echo -e "目录结构:"
+    echo "  .openclaw/"
+    echo "  ├── MEMORY.md         # 长期记忆"
+    echo "  ├── DEVELOPMENT.md    # 开发准则"
+    echo "  ├── memory/           # 工作日志"
+    echo "  │   ├── YYYY-MM-DD.md # 每日日志"
+    echo "  │   ├── tasks.md      # 待办事项"
+    echo "  │   └── context.md    # 当前上下文"
+    echo "  └── skills/           # OpenClaw 技能"
 }
 
 # 查看同步状态
@@ -187,8 +265,8 @@ show_status() {
     # Memory 文件状态
     echo ""
     echo -e "${YELLOW}Memory 文件:${NC}"
-    if [ -f "MEMORY.md" ]; then
-        LAST_UPDATE=$(grep -A1 "最后更新" MEMORY.md 2>/dev/null | tail -1 | sed 's/- //')
+    if [ -f ".openclaw/MEMORY.md" ]; then
+        LAST_UPDATE=$(grep -A1 "最后更新" .openclaw/MEMORY.md 2>/dev/null | tail -1 | sed 's/- //')
         echo -e "  MEMORY.md: ${GREEN}存在${NC}"
         [ -n "$LAST_UPDATE" ] && echo -e "    最后更新: $LAST_UPDATE"
     else
@@ -196,7 +274,7 @@ show_status() {
     fi
     
     if [ -d "$MEMORY_DIR" ]; then
-        FILE_COUNT=$(ls -1 "$MEMORY_DIR"/*.md 2>/dev/null | wc -l)
+        FILE_COUNT=$(ls -1 "$MEMORY_DIR"/*.md 2>/dev/null | wc -l | tr -d ' ')
         echo -e "  memory/: ${GREEN}$FILE_COUNT 个文件${NC}"
     else
         echo -e "  memory/: ${RED}不存在${NC}"
@@ -213,11 +291,15 @@ do_sync() {
     echo -e "${YELLOW}1. 拉取远程更新...${NC}"
     git fetch --quiet
     
-    # 检查是否有冲突
-    if git diff --quiet HEAD "@{u}" 2>/dev/null; then
+    # 检查是否有更新
+    LOCAL=$(git rev-parse HEAD 2>/dev/null)
+    REMOTE=$(git rev-parse "@{u}" 2>/dev/null)
+    
+    if [ "$LOCAL" = "$REMOTE" ]; then
         echo -e "   ${GREEN}本地已是最新${NC}"
     else
         # 暂存本地修改
+        STASHED=false
         if ! git diff-index --quiet HEAD --; then
             echo -e "   ${YELLOW}暂存本地修改...${NC}"
             git stash push -m "git-sync auto stash"
@@ -246,12 +328,14 @@ do_sync() {
         echo -e "${YELLOW}2. 检查 Memory 文件...${NC}"
         MEMORY_CHANGED=false
         
-        for file in MEMORY.md $MEMORY_DIR/*.md; do
-            if [ -f "$file" ] && git diff --quiet HEAD -- "$file" 2>/dev/null; then
-                :
-            elif [ -f "$file" ]; then
-                MEMORY_CHANGED=true
-                git add "$file"
+        for file in .openclaw/MEMORY.md .openclaw/memory/*.md; do
+            if [ -f "$file" ]; then
+                if git diff --quiet HEAD -- "$file" 2>/dev/null; then
+                    : # 无变化
+                else
+                    MEMORY_CHANGED=true
+                    git add "$file"
+                fi
             fi
         done
         
@@ -296,24 +380,20 @@ do_checkpoint() {
     echo -e "${BLUE}=== 创建检查点 ===${NC}"
     
     # 更新 MEMORY.md 中的工作状态
-    if [ -f "MEMORY.md" ]; then
-        # 使用 sed 更新工作状态部分
-        if grep -q "### 最后更新" MEMORY.md; then
-            # macOS 兼容的 sed
-            sed -i '' "/### 最后更新/,/^$/c\\
-### 最后更新\\
-- 时间: $TIMESTAMP\\
-- 环境: $ENVIRONMENT\\
-- 任务: $MESSAGE\\
-- 进度: 进行中\\
-" MEMORY.md 2>/dev/null || sed -i "/### 最后更新/,/^$/c\\
-### 最后更新\\
-- 时间: $TIMESTAMP\\
-- 环境: $ENVIRONMENT\\
-- 任务: $MESSAGE\\
-- 进度: 进行中\\
-" MEMORY.md
-        fi
+    if [ -f ".openclaw/MEMORY.md" ]; then
+        # 创建临时文件更新工作状态
+        awk -v ts="$TIMESTAMP" -v env="$ENVIRONMENT" -v msg="$MESSAGE" '
+        /^### 最后更新/ {
+            print $0
+            getline; print "- 时间: " ts
+            getline; print "- 环境: " env
+            getline; print "- 任务: " msg
+            getline; print "- 进度: 进行中"
+            next
+        }
+        { print }
+        ' .openclaw/MEMORY.md > .openclaw/MEMORY.md.tmp && mv .openclaw/MEMORY.md.tmp .openclaw/MEMORY.md
+        
         echo -e "${GREEN}已更新 MEMORY.md${NC}"
     fi
     
@@ -340,10 +420,10 @@ do_resume() {
     git pull --quiet
     
     # 读取 MEMORY.md 中的工作状态
-    if [ -f "MEMORY.md" ]; then
+    if [ -f ".openclaw/MEMORY.md" ]; then
         echo ""
         echo -e "${GREEN}=== 上次工作状态 ===${NC}"
-        grep -A5 "### 最后更新" MEMORY.md 2>/dev/null || echo "未找到工作状态记录"
+        grep -A5 "### 最后更新" .openclaw/MEMORY.md 2>/dev/null || echo "未找到工作状态记录"
         echo ""
         
         # 显示待办事项
@@ -369,7 +449,7 @@ push_memory() {
     
     echo -e "${BLUE}推送 Memory 文件...${NC}"
     
-    for file in MEMORY.md $MEMORY_DIR/*.md; do
+    for file in .openclaw/MEMORY.md .openclaw/memory/*.md; do
         if [ -f "$file" ]; then
             git add "$file"
         fi
@@ -393,7 +473,7 @@ pull_memory() {
     git fetch --quiet
     
     # 仅拉取 Memory 相关文件
-    git checkout origin/$(git branch --show-current) -- MEMORY.md memory/*.md 2>/dev/null || \
+    git checkout origin/$(git branch --show-current) -- .openclaw/MEMORY.md .openclaw/memory/*.md 2>/dev/null || \
         echo -e "${YELLOW}远程无 Memory 文件或已是最新${NC}"
     
     echo -e "${GREEN}Memory 已拉取${NC}"
@@ -421,6 +501,9 @@ case "$1" in
         ;;
     init)
         init_memory
+        ;;
+    guide)
+        show_guide
         ;;
     help|--help|-h)
         show_help
