@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>重生之月薪2000</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div id="app">
+        <!-- 登录/注册页面 -->
+        <div id="auth-page" class="page">
+            <div class="auth-container">
+                <h1>🎮 重生之月薪2000</h1>
+                <p class="subtitle">一个真实的打工人生存模拟游戏</p>
+                
+                <div class="auth-tabs">
+                    <button class="tab-btn active" data-tab="login">登录</button>
+                    <button class="tab-btn" data-tab="register">注册</button>
+                </div>
+                
+                <!-- 登录表单 -->
+                <div id="login-form" class="auth-form">
+                    <input type="text" id="login-username" placeholder="用户名" required>
+                    <input type="password" id="login-password" placeholder="密码" required>
+                    <button id="login-btn" class="btn-primary">登录</button>
+                    <p id="login-error" class="error-message"></p>
+                </div>
+                
+                <!-- 注册表单 -->
+                <div id="register-form" class="auth-form hidden">
+                    <input type="text" id="register-username" placeholder="用户名" required>
+                    <input type="email" id="register-email" placeholder="邮箱（可选）">
+                    <input type="password" id="register-password" placeholder="密码" required>
+                    <button id="register-btn" class="btn-primary">注册</button>
+                    <p id="register-error" class="error-message"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 游戏主页面 -->
+        <div id="game-page" class="page hidden">
+            <!-- 顶部状态栏 -->
+            <header class="game-header">
+                <div class="day-info">
+                    <span class="day">第 <span id="day-num">1</span> 天</span>
+                    <span class="time" id="time-of-day">早晨</span>
+                </div>
+                <div class="player-info">
+                    <span id="player-name">玩家</span>
+                    <button id="logout-btn" class="btn-small">退出</button>
+                </div>
+            </header>
+
+            <!-- 资源面板 -->
+            <div class="resources-panel">
+                <div class="resource-item">
+                    <span class="resource-icon">💰</span>
+                    <span class="resource-name">金钱</span>
+                    <span class="resource-value" id="money">2000</span>
+                </div>
+                <div class="resource-item">
+                    <span class="resource-icon">❤️</span>
+                    <span class="resource-name">健康</span>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="health-bar" style="width: 100%"></div>
+                    </div>
+                    <span class="resource-value" id="health">100</span>
+                </div>
+                <div class="resource-item">
+                    <span class="resource-icon">😰</span>
+                    <span class="resource-name">压力</span>
+                    <div class="progress-bar">
+                        <div class="progress-fill stress" id="stress-bar" style="width: 0%"></div>
+                    </div>
+                    <span class="resource-value" id="stress">0</span>
+                </div>
+                <div class="resource-item">
+                    <span class="resource-icon">🍔</span>
+                    <span class="resource-name">饥饿</span>
+                    <div class="progress-bar">
+                        <div class="progress-fill hunger" id="hunger-bar" style="width: 0%"></div>
+                    </div>
+                    <span class="resource-value" id="hunger">0</span>
+                </div>
+                <div class="resource-item">
+                    <span class="resource-icon">⚡</span>
+                    <span class="resource-name">精力</span>
+                    <div class="progress-bar">
+                        <div class="progress-fill energy" id="energy-bar" style="width: 100%"></div>
+                    </div>
+                    <span class="resource-value" id="energy">100</span>
+                </div>
+            </div>
+
+            <!-- 工作信息 -->
+            <div class="job-info">
+                <span>💼 职位: <span id="job-level">实习生</span></span>
+                <span>😊 满意度: <span id="job-satisfaction">50</span></span>
+                <span>🤝 人际关系: <span id="relationship">50</span></span>
+            </div>
+
+            <!-- 游戏主区域 -->
+            <main class="game-main">
+                <!-- 事件显示区 -->
+                <div id="event-panel" class="event-panel hidden">
+                    <h3 id="event-title">事件标题</h3>
+                    <p id="event-description">事件描述...</p>
+                    <div id="event-choices" class="choices"></div>
+                </div>
+
+                <!-- 行动按钮区 -->
+                <div id="actions-panel" class="actions-panel">
+                    <h3>选择今天的行动</h3>
+                    <div id="actions-grid" class="actions-grid"></div>
+                </div>
+
+                <!-- 游戏日志 -->
+                <div class="game-log">
+                    <h3>📜 游戏日志</h3>
+                    <div id="log-content" class="log-content"></div>
+                </div>
+            </main>
+
+            <!-- 开始游戏按钮 -->
+            <div id="start-game-panel" class="start-panel">
+                <h2>准备好开始你的打工人生活了吗？</h2>
+                <p>初始资金：2000元 | 目标：生存并逆袭！</p>
+                <button id="start-game-btn" class="btn-primary btn-large">开始新游戏</button>
+            </div>
+        </div>
+
+        <!-- 游戏结束页面 -->
+        <div id="ending-page" class="page hidden">
+            <div class="ending-container">
+                <h1 id="ending-title">游戏结束</h1>
+                <p id="ending-description">结局描述...</p>
+                <div class="ending-stats">
+                    <p>存活天数: <span id="ending-days">0</span></p>
+                    <p>最终资金: <span id="ending-money">0</span></p>
+                </div>
+                <button id="restart-btn" class="btn-primary btn-large">重新开始</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
