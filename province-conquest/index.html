@@ -4,102 +4,73 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>问鼎中原 - 各省争霸统一天下</title>
-    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <div id="app">
-        <!-- 标题区域 -->
-        <header>
-            <h1>问鼎中原</h1>
-            <p class="subtitle">各省历史人物争霸 · 统一天下</p>
-        </header>
+    <!-- 地图容器 - 全屏 -->
+    <div id="chinaMap"></div>
 
-        <!-- 控制面板 -->
-        <div class="control-panel">
-            <button id="btnStart" class="btn primary">开始征服</button>
-            <button id="btnPause" class="btn" disabled>暂停</button>
-            <button id="btnReset" class="btn">重置</button>
-            <span class="speed-control">
-                速度: 
-                <select id="speedSelect">
-                    <option value="3000">慢速</option>
-                    <option value="2000" selected>正常</option>
-                    <option value="1000">快速</option>
-                </select>
-            </span>
-        </div>
+    <!-- 顶部标题叠加层 -->
+    <div class="header-overlay">
+        <h1>问鼎中原</h1>
+        <p class="subtitle">各省英雄，谁主沉浮</p>
+    </div>
 
-        <!-- 主要区域 -->
-        <div class="main-container">
-            <!-- 地图区域 -->
-            <div class="map-section">
-                <div id="chinaMap"></div>
-                <div class="legend">
-                    <div class="legend-item">
-                        <span class="color-box conquered"></span> 已征服
-                    </div>
-                    <div class="legend-item">
-                        <span class="color-box unconquered"></span> 未征服
-                    </div>
-                    <div class="legend-item">
-                        <span class="color-box targeting"></span> 目标
-                    </div>
+    <!-- 底部状态栏 -->
+    <div class="status-bar">
+        <span class="status-item">
+            <span class="status-label">第</span>
+            <span id="roundNumber" class="status-value">1</span>
+            <span class="status-label">轮</span>
+        </span>
+        <span class="status-separator">|</span>
+        <span class="status-item">
+            <span class="status-label">存活:</span>
+            <span id="aliveCount" class="status-value">34</span>
+            <span class="status-label">省</span>
+        </span>
+    </div>
+
+    <!-- 对决信息浮层 -->
+    <div id="battleOverlay" class="battle-overlay">
+        <div class="battle-content">
+            <div class="battle-header">
+                <span class="battle-title">巅峰对决</span>
+            </div>
+            <div class="battle-provinces">
+                <div class="province-side attacker">
+                    <div class="province-name" id="attackerName">-</div>
+                    <div class="province-hero" id="attackerHero">-</div>
+                </div>
+                <div class="vs-divider">VS</div>
+                <div class="province-side defender">
+                    <div class="province-name" id="defenderName">-</div>
+                    <div class="province-hero" id="defenderHero">-</div>
                 </div>
             </div>
-
-            <!-- 信息面板 -->
-            <div class="info-section">
-                <!-- 当前状态 -->
-                <div class="status-card">
-                    <h3>当前状态</h3>
-                    <div class="status-content">
-                        <p>征服阶段: <span id="currentStage">等待开始</span></p>
-                        <p>已征服省份: <span id="conqueredCount">1</span> / 34</p>
-                        <p>阵营总战力: <span id="totalPower">100</span></p>
-                    </div>
-                </div>
-
-                <!-- 对决面板 -->
-                <div id="battlePanel" class="battle-panel hidden">
-                    <h3>⚔️ 对决</h3>
-                    <div class="battle-content">
-                        <div class="fighter attacker">
-                            <div class="fighter-name" id="attackerName">秦始皇</div>
-                            <div class="fighter-province" id="attackerProvince">陕西</div>
-                            <div class="fighter-power">
-                                战力: <span id="attackerPower">100</span>
-                            </div>
-                        </div>
-                        <div class="vs">VS</div>
-                        <div class="fighter defender">
-                            <div class="fighter-name" id="defenderName">-</div>
-                            <div class="fighter-province" id="defenderProvince">-</div>
-                            <div class="fighter-power">
-                                战力: <span id="defenderPower">-</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div id="battleResult" class="battle-result"></div>
-                </div>
-
-                <!-- 英雄榜 -->
-                <div class="heroes-card">
-                    <h3>🏆 阵营英雄</h3>
-                    <div id="heroesList" class="heroes-list">
-                        <div class="hero-item">
-                            <span class="hero-name">秦始皇</span>
-                            <span class="hero-title">陕西 · 君主</span>
-                        </div>
-                    </div>
-                </div>
+            <div class="battle-dimensions" id="battleDimensions">
+                <!-- 6维度对比将通过JS动态生成 -->
             </div>
+            <div class="battle-result" id="battleResult"></div>
         </div>
+    </div>
 
-        <!-- 征服日志 -->
-        <div class="log-section">
-            <h3>📜 征服日志</h3>
-            <div id="conquestLog" class="log-content"></div>
+    <!-- 最终胜利画面 -->
+    <div id="victoryOverlay" class="victory-overlay">
+        <div class="victory-content">
+            <div class="victory-crown">👑</div>
+            <h2 class="victory-title">天下一统</h2>
+            <div class="victory-province" id="victoryProvince">-</div>
+            <div class="victory-heroes">
+                <h3>风云人物</h3>
+                <div id="victoryHeroesList" class="heroes-scroll"></div>
+            </div>
+            <div id="victoryRadar" class="victory-radar"></div>
+            <div class="victory-particles">
+                <span></span><span></span><span></span>
+                <span></span><span></span><span></span>
+            </div>
         </div>
     </div>
 
@@ -107,6 +78,5 @@
     <script src="js/battle.js"></script>
     <script src="js/map.js"></script>
     <script src="js/animation.js"></script>
-    <script src="js/main.js"></script>
 </body>
 </html>

@@ -1,13 +1,22 @@
-// 地图模块
+// ========================================
+// 地图模块 - 省份争霸
+// ========================================
 
 let chart = null;
 let geoJson = null;
+let battleHighlightTimer = null;
 
 /**
  * 初始化地图
+ * @returns {Promise<Object>} chart实例
  */
 async function initMap() {
     const chartDom = document.getElementById('chinaMap');
+    if (!chartDom) {
+        console.error('找不到地图容器 #chinaMap');
+        return null;
+    }
+    
     chart = echarts.init(chartDom, 'dark');
     
     // 加载中国地图GeoJSON
@@ -15,109 +24,69 @@ async function initMap() {
         const response = await fetch('https://geo.datav.aliyun.com/areas_v3/bound/100000_full.json');
         geoJson = await response.json();
         echarts.registerMap('china', geoJson);
-        renderMap();
     } catch (error) {
-        console.error('加载地图失败:', error);
-        // 使用备用地图数据
-        loadBackupMap();
+        console.warn('在线地图加载失败，尝试本地备用:', error);
+        try {
+            const response = await fetch('assets/china.json');
+            geoJson = await response.json();
+            echarts.registerMap('china', geoJson);
+        } catch (e) {
+            console.error('地图加载失败:', e);
+            chartDom.innerHTML = '<p style="text-align:center;padding:50px;color:#fff;">地图加载失败，请刷新页面重试</p>';
+            return null;
+        }
     }
+    
+    // 渲染初始地图
+    renderInitialMap();
+    
+    return chart;
 }
 
 /**
- * 加载备用地图
+ * 渲染初始地图
  */
-async function loadBackupMap() {
-    try {
-        const response = await fetch('assets/china.json');
-        geoJson = await response.json();
-        echarts.registerMap('china', geoJson);
-        renderMap();
-    } catch (e) {
-        console.error('备用地图也加载失败');
-        document.getElementById('chinaMap').innerHTML = '<p style="text-align:center;padding:50px;">地图加载失败，请刷新页面重试</p>';
-    }
-}
-
-/**
- * 渲染地图
- */
-function renderMap(highlightProvince = null) {
+function renderInitialMap() {
     const data = [];
-    const provinceData = window.provinceData;
     
     for (const key in provinceData) {
         const p = provinceData[key];
-        let itemStyle = {};
-        
-        if (p.conquered) {
-            itemStyle = {
-                areaColor: '#e94560',
-                borderColor: '#fff',
-                borderWidth: 1
-            };
-        } else if (key === highlightProvince) {
-            itemStyle = {
-                areaColor: '#ffd700',
-                borderColor: '#fff',
-                borderWidth: 2
-            };
-        } else {
-            itemStyle = {
-                areaColor: '#3d5a80',
-                borderColor: '#fff',
-                borderWidth: 0.5
-            };
-        }
-        
         data.push({
             name: p.name,
-            value: p.power,
-            itemStyle: itemStyle,
-            label: {
-                show: true,
-                formatter: p.hero,
-                fontSize: 10,
-                color: '#fff'
+            value: p.heroes.length,
+            key: key,
+            itemStyle: {
+                areaColor: p.color,
+                borderColor: '#1a1a2e',
+                borderWidth: 1
             }
         });
     }
     
     const option = {
         backgroundColor: 'transparent',
-        tooltip: {
-            trigger: 'item',
-            formatter: function(params) {
-                const key = geoNameMap[params.name];
-                if (key && provinceData[key]) {
-                    const p = provinceData[key];
-                    return `<div style="padding:10px;">
-                        <strong>${p.name}</strong><br/>
-                        代表: ${p.hero}<br/>
-                        身份: ${p.type}<br/>
-                        战力: ${p.power}<br/>
-                        状态: ${p.conquered ? '已征服' : '未征服'}
-                    </div>`;
-                }
-                return params.name;
-            }
-        },
         series: [{
             type: 'map',
             map: 'china',
-            roam: true,
+            roam: false,
             zoom: 1.2,
-            data: data,
-            emphasis: {
-                itemStyle: {
-                    areaColor: '#ff6b6b',
-                    borderColor: '#fff',
-                    borderWidth: 2
-                },
-                label: {
-                    show: true,
-                    fontSize: 12
+            center: [104, 35],
+            label: {
+                show: true,
+                color: '#fff',
+                fontSize: 10,
+                formatter: function(params) {
+                    return params.name;
                 }
-            }
+            },
+            itemStyle: {
+                borderColor: '#1a1a2e',
+                borderWidth: 1
+            },
+            emphasis: {
+                disabled: true
+            },
+            data: data
         }]
     };
     
@@ -125,36 +94,397 @@ function renderMap(highlightProvince = null) {
 }
 
 /**
- * 高亮指定省份
- */
-function highlightProvince(key) {
-    renderMap(key);
-}
-
-/**
  * 更新地图颜色
+ * @param {Object} gameState - 游戏状态对象
+ * @param {Object} gameState.provinces - 省份状态 { [key]: { owner: string|null, heroes: [] } }
  */
-function updateMap() {
-    renderMap();
+function updateMapColors(gameState) {
+    if (!chart) return;
+    
+    const data = [];
+    
+    for (const key in provinceData) {
+        const p = provinceData[key];
+        const state = gameState.provinces[key];
+        let color = p.color;
+        let heroCount = p.heroes.length;
+        
+        // 如果已被征服，使用征服者的颜色
+        if (state && state.conquered && state.conqueredBy && state.conqueredBy !== key) {
+            const ownerProvince = provinceData[state.conqueredBy];
+            if (ownerProvince) {
+                color = ownerProvince.color;
+            }
+            heroCount = (state.heroes ? state.heroes.length : 0) + 
+                        (state.absorbedHeroes ? state.absorbedHeroes.length : 0);
+        }
+        
+        data.push({
+            name: p.name,
+            value: heroCount,
+            key: key,
+            itemStyle: {
+                areaColor: color,
+                borderColor: '#1a1a2e',
+                borderWidth: 1
+            },
+            label: {
+                show: true,
+                formatter: params => {
+                    return params.name + '(' + heroCount + '人)';
+                }
+            }
+        });
+    }
+    
+    chart.setOption({
+        series: [{
+            data: data
+        }]
+    });
 }
 
 /**
- * 显示征服动画
+ * 高亮交战省份
+ * @param {string} attackerKey - 攻击方省份key
+ * @param {string} defenderKey - 防守方省份key
+ * @param {Object} gameState - 游戏状态
+ * @returns {Function} cleanup函数，用于取消高亮
  */
-function showConquestAnimation(targetKey, callback) {
-    // 先高亮
-    highlightProvince(targetKey);
+function highlightBattleProvinces(attackerKey, defenderKey, gameState) {
+    if (!chart) return () => {};
     
-    // 延迟后更新
-    setTimeout(() => {
-        window.provinceData[targetKey].conquered = true;
-        updateMap();
-        if (callback) callback();
-    }, 1000);
+    const data = [];
+    let flashState = true;
+    
+    // 构建数据
+    const buildData = (isFlash) => {
+        const result = [];
+        for (const key in provinceData) {
+            const p = provinceData[key];
+            const state = gameState.provinces[key];
+            let color = p.color;
+            let heroCount = p.heroes.length;
+            let borderColor = '#1a1a2e';
+            let borderWidth = 1;
+            let opacity = 1;
+            
+            // 如果已被征服，使用征服者的颜色
+            if (state && state.conquered && state.conqueredBy && state.conqueredBy !== key) {
+                const ownerProvince = provinceData[state.conqueredBy];
+                if (ownerProvince) {
+                    color = ownerProvince.color;
+                }
+                heroCount = (state.heroes ? state.heroes.length : 0) + 
+                            (state.absorbedHeroes ? state.absorbedHeroes.length : 0);
+            }
+            
+            // 交战省份高亮处理
+            if (key === attackerKey || key === defenderKey) {
+                if (isFlash) {
+                    borderColor = key === attackerKey ? '#ff0000' : '#ffff00';
+                    borderWidth = 3;
+                } else {
+                    borderColor = key === attackerKey ? '#ff6b6b' : '#ffd700';
+                    borderWidth = 2;
+                }
+            } else {
+                // 其他省份变暗
+                opacity = 0.5;
+            }
+            
+            result.push({
+                name: p.name,
+                value: heroCount,
+                key: key,
+                itemStyle: {
+                    areaColor: color,
+                    borderColor: borderColor,
+                    borderWidth: borderWidth,
+                    opacity: opacity
+                },
+                label: {
+                    show: true,
+                    formatter: params => {
+                        return params.name + '(' + heroCount + '人)';
+                    }
+                }
+            });
+        }
+        return result;
+    };
+    
+    // 初始设置
+    chart.setOption({
+        series: [{
+            data: buildData(false)
+        }]
+    });
+    
+    // 闪烁动画
+    battleHighlightTimer = setInterval(() => {
+        flashState = !flashState;
+        chart.setOption({
+            series: [{
+                data: buildData(flashState)
+            }]
+        });
+    }, 500);
+    
+    // 返回cleanup函数
+    return function cleanup() {
+        if (battleHighlightTimer) {
+            clearInterval(battleHighlightTimer);
+            battleHighlightTimer = null;
+        }
+        // 恢复正常显示
+        updateMapColors(gameState);
+    };
 }
 
-// 导出函数
+/**
+ * 征服动画（颜色渐变）
+ * @param {string} winnerKey - 胜利方省份key
+ * @param {string} loserKey - 失败方省份key
+ * @param {Object} gameState - 游戏状态
+ * @returns {Promise<void>}
+ */
+function animateConquest(winnerKey, loserKey, gameState) {
+    return new Promise((resolve) => {
+        if (!chart) {
+            resolve();
+            return;
+        }
+        
+        const winnerProvince = provinceData[winnerKey];
+        const loserProvince = provinceData[loserKey];
+        const winnerColor = winnerProvince.color;
+        const loserColor = loserProvince.color;
+        
+        const data = [];
+        for (const key in provinceData) {
+            const p = provinceData[key];
+            const state = gameState.provinces[key];
+            let color = p.color;
+            let heroCount = p.heroes.length;
+            
+            // 如果已被征服，使用征服者的颜色
+            if (state && state.conquered && state.conqueredBy && state.conqueredBy !== key) {
+                const ownerProvince = provinceData[state.conqueredBy];
+                if (ownerProvince) {
+                    color = ownerProvince.color;
+                }
+                heroCount = (state.heroes ? state.heroes.length : 0) + 
+                            (state.absorbedHeroes ? state.absorbedHeroes.length : 0);
+            }
+            
+            // 失败省份使用渐变动画
+            if (key === loserKey) {
+                color = winnerColor;
+            }
+            
+            data.push({
+                name: p.name,
+                value: heroCount,
+                key: key,
+                itemStyle: {
+                    areaColor: key === loserKey ? loserColor : color,
+                    borderColor: '#1a1a2e',
+                    borderWidth: 1
+                },
+                label: {
+                    show: true,
+                    formatter: params => {
+                        return params.name + '(' + heroCount + '人)';
+                    }
+                }
+            });
+        }
+        
+        // 第一阶段：设置初始状态
+        chart.setOption({
+            series: [{
+                data: data,
+                animationDuration: 0
+            }]
+        });
+        
+        // 第二阶段：触发颜色渐变动画
+        setTimeout(() => {
+            const newData = data.map(item => {
+                if (item.key === loserKey) {
+                    return {
+                        ...item,
+                        itemStyle: {
+                            ...item.itemStyle,
+                            areaColor: winnerColor
+                        }
+                    };
+                }
+                return item;
+            });
+            
+            chart.setOption({
+                series: [{
+                    data: newData,
+                    animationDuration: 1000,
+                    animationEasing: 'cubicOut'
+                }]
+            });
+            
+            // 动画完成后resolve
+            setTimeout(() => {
+                resolve();
+            }, 1000);
+        }, 50);
+    });
+}
+
+/**
+ * 最终胜利雷达图
+ * @param {string} championKey - 冠军省份key
+ * @param {Object} gameState - 游戏状态
+ */
+function renderVictoryRadar(championKey, gameState) {
+    const radarDom = document.getElementById('victoryRadar');
+    if (!radarDom) {
+        console.error('找不到雷达图容器 #victoryRadar');
+        return;
+    }
+    
+    const radarChart = echarts.init(radarDom, 'dark');
+    const championProvince = provinceData[championKey];
+    const state = gameState.provinces[championKey];
+    // 合并原始英雄和吸收的英雄
+    const allHeroes = [...(state && state.heroes ? state.heroes : championProvince.heroes || []), 
+                       ...(state && state.absorbedHeroes ? state.absorbedHeroes : [])];
+    const heroes = allHeroes;
+    
+    // 计算六维平均值
+    const dimensions = ['统帅', '武力', '智谋', '政治', '魅力', '技艺'];
+    const statKeys = ['command', 'martial', 'wisdom', 'politics', 'charisma', 'craft'];
+    
+    const avgValues = statKeys.map(statKey => {
+        const sum = heroes.reduce((acc, hero) => acc + (hero.stats[statKey] || 0), 0);
+        return Math.round(sum / heroes.length);
+    });
+    
+    // 计算最大值用于展示
+    const maxValues = statKeys.map(statKey => {
+        return Math.max(...heroes.map(hero => hero.stats[statKey] || 0));
+    });
+    
+    const option = {
+        backgroundColor: 'transparent',
+        title: {
+            text: championProvince.name + ' - 综合实力',
+            left: 'center',
+            top: 10,
+            textStyle: {
+                color: '#ffd700',
+                fontSize: 16,
+                fontWeight: 'bold'
+            }
+        },
+        tooltip: {
+            trigger: 'item'
+        },
+        radar: {
+            indicator: dimensions.map((dim, i) => ({
+                name: dim,
+                max: 100
+            })),
+            center: ['50%', '55%'],
+            radius: '65%',
+            axisName: {
+                color: '#ffd700',
+                fontSize: 12
+            },
+            splitArea: {
+                areaStyle: {
+                    color: ['rgba(255, 215, 0, 0.05)', 'rgba(255, 215, 0, 0.1)', 
+                            'rgba(255, 215, 0, 0.15)', 'rgba(255, 215, 0, 0.2)']
+                }
+            },
+            axisLine: {
+                lineStyle: {
+                    color: 'rgba(255, 215, 0, 0.3)'
+                }
+            },
+            splitLine: {
+                lineStyle: {
+                    color: 'rgba(255, 215, 0, 0.3)'
+                }
+            }
+        },
+        series: [{
+            type: 'radar',
+            data: [
+                {
+                    value: avgValues,
+                    name: '平均值',
+                    areaStyle: {
+                        color: 'rgba(255, 215, 0, 0.3)'
+                    },
+                    lineStyle: {
+                        color: '#ffd700',
+                        width: 2
+                    },
+                    itemStyle: {
+                        color: '#ffd700'
+                    }
+                },
+                {
+                    value: maxValues,
+                    name: '最高值',
+                    areaStyle: {
+                        color: 'rgba(255, 140, 0, 0.2)'
+                    },
+                    lineStyle: {
+                        color: '#ff8c00',
+                        width: 2,
+                        type: 'dashed'
+                    },
+                    itemStyle: {
+                        color: '#ff8c00'
+                    }
+                }
+            ]
+        }],
+        legend: {
+            data: ['平均值', '最高值'],
+            bottom: 10,
+            textStyle: {
+                color: '#ffd700'
+            }
+        }
+    };
+    
+    radarChart.setOption(option);
+    
+    // 保存到全局以便后续访问
+    window.victoryRadarChart = radarChart;
+}
+
+/**
+ * 窗口大小改变时重新调整图表
+ */
+function resizeMap() {
+    if (chart) {
+        chart.resize();
+    }
+    if (window.victoryRadarChart) {
+        window.victoryRadarChart.resize();
+    }
+}
+
+// 监听窗口大小变化
+window.addEventListener('resize', resizeMap);
+
+// 导出函数到全局
 window.initMap = initMap;
-window.updateMap = updateMap;
-window.highlightProvince = highlightProvince;
-window.showConquestAnimation = showConquestAnimation;
+window.updateMapColors = updateMapColors;
+window.highlightBattleProvinces = highlightBattleProvinces;
+window.animateConquest = animateConquest;
+window.renderVictoryRadar = renderVictoryRadar;
+window.resizeMap = resizeMap;
