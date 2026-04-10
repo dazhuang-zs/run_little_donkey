@@ -33,6 +33,25 @@ function updateBattlesList(battles) {
     const defenderColor = provinceData[duel.defender.key]?.color || '#666';
     const winnerName = duel.winner === 'attacker' ? duel.attacker.name : duel.defender.name;
 
+    // 获取对决双方的名人
+    const attackerHeroes = getEffectiveHeroes(duel.attacker.key, window.currentGameState || gameState);
+    const defenderHeroes = getEffectiveHeroes(duel.defender.key, window.currentGameState || gameState);
+
+    // 生成对决名人列表（取前3个）
+    const attackerHeroHtml = attackerHeroes.slice(0, 3).map(h => `
+      <div class="battle-mini-hero">
+        <span class="battle-mini-hero-name">${h.name}</span>
+        <span class="battle-mini-hero-title">${h.title}</span>
+      </div>
+    `).join('');
+
+    const defenderHeroHtml = defenderHeroes.slice(0, 3).map(h => `
+      <div class="battle-mini-hero">
+        <span class="battle-mini-hero-name">${h.name}</span>
+        <span class="battle-mini-hero-title">${h.title}</span>
+      </div>
+    `).join('');
+
     // 生成6维度对比条
     const dimensionRows = (duel.dimensions || []).map(dim => {
       const total = dim.attackerValue + dim.defenderValue;
@@ -58,6 +77,10 @@ function updateBattlesList(battles) {
           <span class="attacker-name" style="color:${attackerColor}">${duel.attacker.name}</span>
           <span class="vs-badge">VS</span>
           <span class="defender-name" style="color:${defenderColor}">${duel.defender.name}</span>
+        </div>
+        <div class="battle-heroes">
+          <div class="battle-hero-side left">${attackerHeroHtml}</div>
+          <div class="battle-hero-side right">${defenderHeroHtml}</div>
         </div>
         <div class="dimension-rows">${dimensionRows}</div>
         <div class="battle-score">

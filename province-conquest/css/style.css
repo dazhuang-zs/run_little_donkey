@@ -132,6 +132,48 @@ html, body {
     margin-bottom: 6px;
 }
 
+.battle-heroes {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 6px;
+    gap: 10px;
+}
+
+.battle-hero-side {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.battle-hero-side.left {
+    align-items: flex-start;
+}
+
+.battle-hero-side.right {
+    align-items: flex-end;
+}
+
+.battle-mini-hero {
+    font-size: 9px;
+    padding: 2px 6px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+.battle-mini-hero-name {
+    font-weight: 600;
+}
+
+.battle-mini-hero-title {
+    color: rgba(255,215,0,0.5);
+    margin-left: 3px;
+}
+
 .attacker-name,
 .defender-name {
     font-size: 13px;
@@ -256,8 +298,8 @@ html, body {
 
 /* 名人区域 */
 .heroes-section {
-    flex: 0 0 auto;
-    max-height: 35%;
+    flex: 1;
+    min-height: 0;
     background: rgba(0,0,0,0.2);
     border-radius: 8px;
     border: 1px solid rgba(255,255,255,0.08);
@@ -268,93 +310,112 @@ html, body {
 
 .heroes-title {
     padding: 8px 10px;
-    font-size: 12px;
-    color: rgba(255,215,0,0.8);
-    letter-spacing: 2px;
+    font-size: 13px;
+    font-weight: 700;
+    color: rgba(255,215,0,0.9);
+    letter-spacing: 3px;
     border-bottom: 1px solid rgba(255,255,255,0.1);
-    background: rgba(255,215,0,0.05);
+    background: linear-gradient(90deg, rgba(255,215,0,0.1) 0%, transparent 100%);
     flex-shrink: 0;
 }
 
 .heroes-list {
     flex: 1;
     overflow-y: auto;
-    padding: 6px;
+    padding: 8px;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
 }
 
 /* 省份名人分组 */
 .province-heroes-group {
     animation: fadeIn 0.3s ease;
+    background: rgba(255,255,255,0.02);
+    border-radius: 6px;
+    padding: 6px;
+    border: 1px solid rgba(255,255,255,0.03);
 }
 
 .province-group-header {
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 4px 6px;
-    background: rgba(255,255,255,0.03);
+    gap: 8px;
+    padding: 6px 8px;
+    background: rgba(255,255,255,0.04);
     border-radius: 4px;
-    margin-bottom: 4px;
+    margin-bottom: 6px;
+}
+
+.province-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    box-shadow: 0 0 8px currentColor;
 }
 
 .province-group-name {
-    font-size: 11px;
-    font-weight: 600;
-    color: rgba(255,255,255,0.9);
+    font-size: 12px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.95);
 }
 
 .hero-count {
-    font-size: 9px;
-    color: rgba(255,255,255,0.4);
+    font-size: 10px;
+    color: rgba(255,215,0,0.7);
     margin-left: auto;
+    background: rgba(255,215,0,0.1);
+    padding: 1px 6px;
+    border-radius: 8px;
 }
 
 .hero-cards {
     display: flex;
-    flex-direction: column;
-    gap: 3px;
-    padding-left: 8px;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding-left: 4px;
 }
 
 .hero-card {
-    padding: 4px 8px;
-    background: rgba(255,255,255,0.03);
-    border-radius: 4px;
-    border-left: 2px solid rgba(255,215,0,0.2);
+    padding: 6px 8px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%);
+    border-radius: 6px;
+    border: 1px solid rgba(255,215,0,0.1);
+    flex: 1 1 calc(50% - 4px);
+    min-width: 0;
 }
 
 .hero-name {
     font-size: 11px;
-    font-weight: 600;
-    color: rgba(255,255,255,0.9);
-    display: inline;
+    font-weight: 700;
+    color: rgba(255,255,255,0.95);
+    display: block;
 }
 
 .hero-title {
     font-size: 9px;
-    color: rgba(255,215,0,0.6);
-    display: inline;
-    margin-left: 4px;
+    color: rgba(255,215,0,0.7);
+    display: block;
+    margin-top: 2px;
 }
 
 .hero-stats-mini {
     display: flex;
     flex-wrap: wrap;
     gap: 3px;
-    margin-top: 2px;
+    margin-top: 4px;
 }
 
 .stat-tag {
-    font-size: 9px;
-    padding: 0 4px;
+    font-size: 8px;
+    padding: 1px 4px;
     border: 1px solid;
     border-radius: 3px;
-    background: rgba(0,0,0,0.3);
-    line-height: 16px;
+    background: rgba(0,0,0,0.2);
+    line-height: 14px;
     white-space: nowrap;
+    font-weight: 600;
 }
 
 @keyframes fadeIn {
