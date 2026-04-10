@@ -21,7 +21,7 @@ function delay(ms) {
 // ========================================
 
 /**
- * 更新所有对决的列表
+ * 更新所有对决的列表（含6维度对比详情）
  * @param {Array} battles - 对决数组
  */
 function updateBattlesList(battles) {
@@ -29,52 +29,102 @@ function updateBattlesList(battles) {
   if (!battlesList) return;
 
   battlesList.innerHTML = battles.map(duel => {
+    const attackerColor = provinceData[duel.attacker.key]?.color || '#666';
+    const defenderColor = provinceData[duel.defender.key]?.color || '#666';
     const winnerName = duel.winner === 'attacker' ? duel.attacker.name : duel.defender.name;
+
+    // 生成6维度对比条
+    const dimensionRows = (duel.dimensions || []).map(dim => {
+      const total = dim.attackerValue + dim.defenderValue;
+      const leftPct = total > 0 ? (dim.attackerValue / total * 100).toFixed(1) : 50;
+      const rightPct = total > 0 ? (dim.defenderValue / total * 100).toFixed(1) : 50;
+      const leftWin = dim.winner === 'attacker' ? ' win' : '';
+      const rightWin = dim.winner === 'defender' ? ' win' : '';
+      return `
+        <div class="dim-row">
+          <span class="dim-val left${leftWin}">${dim.attackerValue}</span>
+          <div class="dim-bar-wrap">
+            <div class="dim-fill left" style="width:${leftPct}%;background:${attackerColor}"></div>
+            <span class="dim-label">${dim.name}</span>
+            <div class="dim-fill right" style="width:${rightPct}%;background:${defenderColor}"></div>
+          </div>
+          <span class="dim-val right${rightWin}">${dim.defenderValue}</span>
+        </div>`;
+    }).join('');
 
     return `
       <div class="battle-item">
-        <div class="battle-provinces">
-          <div class="battle-province">
-            <div class="province-dot" style="background-color: ${provinceData[duel.attacker.key]?.color || '#666'}"></div>
-            <span class="province-name-small">${duel.attacker.name}</span>
-          </div>
-          <span class="battle-vs">VS</span>
-          <div class="battle-province right">
-            <span class="province-name-small">${duel.defender.name}</span>
-            <div class="province-dot" style="background-color: ${provinceData[duel.defender.key]?.color || '#666'}"></div>
-          </div>
+        <div class="battle-header">
+          <span class="attacker-name" style="color:${attackerColor}">${duel.attacker.name}</span>
+          <span class="vs-badge">VS</span>
+          <span class="defender-name" style="color:${defenderColor}">${duel.defender.name}</span>
         </div>
-        <div class="battle-result-small winner">
-          ${winnerName} 获胜
+        <div class="dimension-rows">${dimensionRows}</div>
+        <div class="battle-score">
+          <span class="score-text">${duel.score.attacker} : ${duel.score.defender}</span>
+          <span class="winner-badge">${winnerName} 胜</span>
         </div>
       </div>
     `;
   }).join('');
 }
 
+// 属性标签缩写与颜色
+const statTagConfig = {
+  command:  { abbr: '统', color: '#e74c3c' },
+  martial:  { abbr: '武', color: '#e67e22' },
+  wisdom:   { abbr: '智', color: '#3498db' },
+  politics: { abbr: '政', color: '#2ecc71' },
+  charisma: { abbr: '魅', color: '#9b59b6' },
+  craft:    { abbr: '技', color: '#f1c40f' }
+};
+
 /**
- * 更新名人列表
+ * 更新名人列表（按省份分组，展示名人卡片）
  * @param {Object} gameState - 游戏状态
  */
 function updateHeroesList(gameState) {
   const heroesList = document.getElementById('heroesList');
   if (!heroesList) return;
 
-  const allHeroes = [];
+  // 按省份分组
+  const groups = [];
   for (const key in gameState.provinces) {
     const province = gameState.provinces[key];
+    if (province.conquered) continue;
     const heroes = getEffectiveHeroes(key, gameState);
-    allHeroes.push(...heroes.map(h => ({
-      ...h,
-      province: province.name
-    })));
+    if (heroes.length === 0) continue;
+    groups.push({
+      name: province.name,
+      color: provinceData[key]?.color || '#666',
+      heroes: heroes
+    });
   }
 
-  heroesList.innerHTML = allHeroes.map(hero => `
-    <div class="hero-chip">
-      ${hero.name}
-    </div>
-  `).join('');
+  heroesList.innerHTML = groups.map(g => {
+    const heroCards = g.heroes.map(hero => {
+      const statTags = dimensionKeys.map(k => {
+        const cfg = statTagConfig[k];
+        return `<span class="stat-tag" style="border-color:${cfg.color};color:${cfg.color}">${cfg.abbr}${hero.stats[k]}</span>`;
+      }).join('');
+      return `
+        <div class="hero-card">
+          <div class="hero-name">${hero.name}</div>
+          <div class="hero-title">${hero.title}</div>
+          <div class="hero-stats-mini">${statTags}</div>
+        </div>`;
+    }).join('');
+
+    return `
+      <div class="province-heroes-group">
+        <div class="province-group-header">
+          <span class="province-dot" style="background:${g.color}"></span>
+          <span class="province-group-name">${g.name}</span>
+          <span class="hero-count">${g.heroes.length}人</span>
+        </div>
+        <div class="hero-cards">${heroCards}</div>
+      </div>`;
+  }).join('');
 }
 
 /**

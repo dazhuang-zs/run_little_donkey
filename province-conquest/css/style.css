@@ -101,7 +101,7 @@ html, body {
 /* 对决列表 */
 .battles-list {
     flex: 0 0 auto;
-    max-height: 35%;
+    max-height: 50%;
     overflow-y: auto;
     background: rgba(0,0,0,0.2);
     border-radius: 8px;
@@ -109,8 +109,8 @@ html, body {
 }
 
 .battle-item {
-    padding: 10px;
-    border-bottom: 1px solid rgba(255,255,255,0.05);
+    padding: 8px 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
     animation: slideIn 0.3s ease;
 }
 
@@ -123,23 +123,128 @@ html, body {
     to { opacity: 1; transform: translateX(0); }
 }
 
-.battle-provinces {
+/* 对决头部 */
+.battle-header {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
     gap: 8px;
     margin-bottom: 6px;
 }
 
-.battle-province {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    flex: 1;
+.attacker-name,
+.defender-name {
+    font-size: 13px;
+    font-weight: 700;
+    white-space: nowrap;
 }
 
-.battle-province.right {
-    justify-content: flex-end;
+.vs-badge {
+    font-size: 10px;
+    color: rgba(255,255,255,0.45);
+    background: rgba(255,255,255,0.06);
+    padding: 1px 6px;
+    border-radius: 4px;
+    letter-spacing: 1px;
+}
+
+/* 维度对比条 */
+.dimension-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    margin-bottom: 6px;
+}
+
+.dim-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.dim-val {
+    font-size: 10px;
+    color: rgba(255,255,255,0.5);
+    width: 28px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.dim-val.left {
+    text-align: right;
+}
+
+.dim-val.right {
+    text-align: left;
+}
+
+.dim-val.win {
+    color: #ffd700;
+    font-weight: 700;
+}
+
+.dim-bar-wrap {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    height: 14px;
+    position: relative;
+    background: rgba(255,255,255,0.04);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.dim-fill {
+    height: 100%;
+    transition: width 0.3s ease;
+    opacity: 0.7;
+}
+
+.dim-fill.left {
+    border-radius: 3px 0 0 3px;
+}
+
+.dim-fill.right {
+    border-radius: 0 3px 3px 0;
+}
+
+.dim-label {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 9px;
+    color: rgba(255,255,255,0.7);
+    text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+    z-index: 1;
+    white-space: nowrap;
+    letter-spacing: 1px;
+}
+
+/* 对决得分 */
+.battle-score {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding-top: 5px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+}
+
+.score-text {
+    font-size: 12px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.8);
+    letter-spacing: 2px;
+}
+
+.winner-badge {
+    font-size: 10px;
+    color: #4ade80;
+    font-weight: 600;
+    background: rgba(74,222,128,0.1);
+    padding: 1px 8px;
+    border-radius: 8px;
+    border: 1px solid rgba(74,222,128,0.25);
 }
 
 .province-dot {
@@ -149,36 +254,10 @@ html, body {
     flex-shrink: 0;
 }
 
-.province-name-small {
-    font-size: 12px;
-    font-weight: 600;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.battle-vs {
-    font-size: 11px;
-    color: rgba(255,255,255,0.5);
-    flex-shrink: 0;
-}
-
-.battle-result-small {
-    font-size: 11px;
-    text-align: center;
-    padding-top: 4px;
-    border-top: 1px solid rgba(255,255,255,0.05);
-}
-
-.battle-result-small.winner {
-    color: #4ade80;
-    font-weight: 600;
-}
-
 /* 名人区域 */
 .heroes-section {
     flex: 0 0 auto;
-    max-height: 30%;
+    max-height: 35%;
     background: rgba(0,0,0,0.2);
     border-radius: 8px;
     border: 1px solid rgba(255,255,255,0.08);
@@ -200,22 +279,82 @@ html, body {
 .heroes-list {
     flex: 1;
     overflow-y: auto;
-    padding: 8px;
+    padding: 6px;
     display: flex;
-    flex-wrap: wrap;
+    flex-direction: column;
     gap: 6px;
-    align-content: flex-start;
 }
 
-.hero-chip {
-    padding: 4px 8px;
-    background: rgba(255,215,0,0.1);
-    border: 1px solid rgba(255,215,0,0.25);
-    border-radius: 12px;
-    font-size: 10px;
-    color: rgba(255,255,255,0.9);
-    white-space: nowrap;
+/* 省份名人分组 */
+.province-heroes-group {
     animation: fadeIn 0.3s ease;
+}
+
+.province-group-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 6px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 4px;
+    margin-bottom: 4px;
+}
+
+.province-group-name {
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.9);
+}
+
+.hero-count {
+    font-size: 9px;
+    color: rgba(255,255,255,0.4);
+    margin-left: auto;
+}
+
+.hero-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding-left: 8px;
+}
+
+.hero-card {
+    padding: 4px 8px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 4px;
+    border-left: 2px solid rgba(255,215,0,0.2);
+}
+
+.hero-name {
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.9);
+    display: inline;
+}
+
+.hero-title {
+    font-size: 9px;
+    color: rgba(255,215,0,0.6);
+    display: inline;
+    margin-left: 4px;
+}
+
+.hero-stats-mini {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+    margin-top: 2px;
+}
+
+.stat-tag {
+    font-size: 9px;
+    padding: 0 4px;
+    border: 1px solid;
+    border-radius: 3px;
+    background: rgba(0,0,0,0.3);
+    line-height: 16px;
+    white-space: nowrap;
 }
 
 @keyframes fadeIn {
