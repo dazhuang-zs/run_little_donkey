@@ -8,51 +8,47 @@
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <!-- 地图容器 - 全屏 -->
-    <div id="chinaMap"></div>
-
-    <!-- 顶部标题叠加层 -->
-    <div class="header-overlay">
-        <h1>问鼎中原</h1>
-        <p class="subtitle">各省英雄，谁主沉浮</p>
-    </div>
-
-    <!-- 底部状态栏 -->
-    <div class="status-bar">
-        <span class="status-item">
-            <span class="status-label">第</span>
-            <span id="roundNumber" class="status-value">1</span>
-            <span class="status-label">轮</span>
-        </span>
-        <span class="status-separator">|</span>
-        <span class="status-item">
-            <span class="status-label">存活:</span>
-            <span id="aliveCount" class="status-value">34</span>
-            <span class="status-label">省</span>
-        </span>
-    </div>
-
-    <!-- 对决信息浮层 -->
-    <div id="battleOverlay" class="battle-overlay">
-        <div class="battle-content">
-            <div class="battle-header">
-                <span class="battle-title">巅峰对决</span>
+    <!-- 主容器 -->
+    <div class="main-container">
+        <!-- 左侧地图区域 -->
+        <div class="map-section">
+            <div id="chinaMap"></div>
+            <!-- 顶部标题 -->
+            <div class="header-overlay">
+                <h1>问鼎中原</h1>
+                <p class="subtitle">各省英雄，谁主沉浮</p>
             </div>
-            <div class="battle-provinces">
-                <div class="province-side attacker">
-                    <div class="province-name" id="attackerName">-</div>
-                    <div class="province-hero" id="attackerHero">-</div>
+        </div>
+        
+        <!-- 右侧PK展示区域 -->
+        <div class="pk-section">
+            <div class="pk-container">
+                <!-- 标题 -->
+                <div class="pk-title">
+                    <span class="pk-label">同时对决</span>
                 </div>
-                <div class="vs-divider">VS</div>
-                <div class="province-side defender">
-                    <div class="province-name" id="defenderName">-</div>
-                    <div class="province-hero" id="defenderHero">-</div>
+                
+                <!-- 当前所有对决列表 -->
+                <div class="battles-list" id="battlesList">
+                    <!-- 动态生成 -->
+                </div>
+                
+                <!-- 名人列表 -->
+                <div class="heroes-section">
+                    <div class="heroes-title">参战名人</div>
+                    <div class="heroes-list" id="heroesList">
+                        <!-- 动态生成 -->
+                    </div>
+                </div>
+                
+                <!-- 历史记录 -->
+                <div class="pk-history">
+                    <div class="history-title">战斗记录</div>
+                    <div class="history-list" id="historyList">
+                        <!-- 动态生成 -->
+                    </div>
                 </div>
             </div>
-            <div class="battle-dimensions" id="battleDimensions">
-                <!-- 6维度对比将通过JS动态生成 -->
-            </div>
-            <div class="battle-result" id="battleResult"></div>
         </div>
     </div>
 

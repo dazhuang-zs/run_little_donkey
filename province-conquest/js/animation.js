@@ -17,108 +17,35 @@ function delay(ms) {
 }
 
 // ========================================
-// 状态栏更新
+// 右侧PK区域展示
 // ========================================
 
 /**
- * 更新底部状态栏
- * @param {number} round - 当前轮次
- * @param {number} aliveCount - 存活省份数量
+ * 更新所有对决的列表
+ * @param {Array} battles - 对决数组
  */
-function updateStatusBar(round, aliveCount) {
-  const roundElement = document.getElementById('roundNumber');
-  const aliveElement = document.getElementById('aliveCount');
-  
-  if (roundElement) {
-    roundElement.textContent = round;
-  }
-  if (aliveElement) {
-    aliveElement.textContent = aliveCount;
-  }
-}
+function updateBattlesList(battles) {
+  const battlesList = document.getElementById('battlesList');
+  if (!battlesList) return;
 
-// ========================================
-// 对决浮层展示
-// ========================================
+  battlesList.innerHTML = battles.map(duel => {
+    const winnerName = duel.winner === 'attacker' ? duel.attacker.name : duel.defender.name;
 
-/**
- * 显示对决浮层
- * @param {Object} duelResult - 对决结果对象
- */
-function showBattleOverlay(duelResult) {
-  const overlay = document.getElementById('battleOverlay');
-  if (!overlay) return;
-
-  // 更新省份名称
-  const attackerNameEl = document.getElementById('attackerName');
-  const defenderNameEl = document.getElementById('defenderName');
-  
-  if (attackerNameEl) attackerNameEl.textContent = duelResult.attacker.name;
-  if (defenderNameEl) defenderNameEl.textContent = duelResult.defender.name;
-
-  // 更新名人信息（显示第一个名人作为代表）
-  const attackerHeroEl = document.getElementById('attackerHero');
-  const defenderHeroEl = document.getElementById('defenderHero');
-  
-  const attackerHeroes = getEffectiveHeroes(duelResult.attacker.key, { provinces: window.currentGameState?.provinces || {} });
-  const defenderHeroes = getEffectiveHeroes(duelResult.defender.key, { provinces: window.currentGameState?.provinces || {} });
-  
-  if (attackerHeroEl) {
-    const firstHero = attackerHeroes[0];
-    attackerHeroEl.textContent = firstHero ? `${firstHero.name} · ${firstHero.title}` : '-';
-  }
-  if (defenderHeroEl) {
-    const firstHero = defenderHeroes[0];
-    defenderHeroEl.textContent = firstHero ? `${firstHero.name} · ${firstHero.title}` : '-';
-  }
-
-  // 生成6维度对比条形
-  const dimensionsContainer = document.getElementById('battleDimensions');
-  if (dimensionsContainer) {
-    dimensionsContainer.innerHTML = generateDimensionBars(duelResult);
-  }
-
-  // 更新结果文本
-  const resultEl = document.getElementById('battleResult');
-  if (resultEl) {
-    const winnerName = duelResult.winner === 'attacker' ? duelResult.attacker.name : duelResult.defender.name;
-    resultEl.textContent = `${winnerName} 获胜！`;
-    resultEl.className = 'battle-result show victory';
-  }
-
-  // 显示浮层
-  overlay.classList.add('active');
-  overlay.classList.remove('fade-out');
-}
-
-/**
- * 生成维度对比条形的HTML
- * @param {Object} duelResult - 对决结果
- * @returns {string} HTML字符串
- */
-function generateDimensionBars(duelResult) {
-  const { dimensions, attacker, defender, winner } = duelResult;
-  
-  return dimensions.map(dim => {
-    const total = dim.attackerValue + dim.defenderValue;
-    const attackerWidth = total > 0 ? (dim.attackerValue / total * 100) : 50;
-    const defenderWidth = total > 0 ? (dim.defenderValue / total * 100) : 50;
-    
-    const attackerWin = dim.winner === 'attacker';
-    const defenderWin = dim.winner === 'defender';
-    
     return `
-      <div class="dimension-row">
-        <div class="dimension-label">${dim.name}</div>
-        <div class="dimension-bars">
-          <div class="bar-side left">
-            <span class="bar-value">${dim.attackerValue}</span>
-            <div class="bar-fill ${attackerWin ? 'winner' : ''}" style="width: ${attackerWidth}%"></div>
+      <div class="battle-item">
+        <div class="battle-provinces">
+          <div class="battle-province">
+            <div class="province-dot" style="background-color: ${provinceData[duel.attacker.key]?.color || '#666'}"></div>
+            <span class="province-name-small">${duel.attacker.name}</span>
           </div>
-          <div class="bar-side right">
-            <div class="bar-fill ${defenderWin ? 'winner' : ''}" style="width: ${defenderWidth}%"></div>
-            <span class="bar-value">${dim.defenderValue}</span>
+          <span class="battle-vs">VS</span>
+          <div class="battle-province right">
+            <span class="province-name-small">${duel.defender.name}</span>
+            <div class="province-dot" style="background-color: ${provinceData[duel.defender.key]?.color || '#666'}"></div>
           </div>
+        </div>
+        <div class="battle-result-small winner">
+          ${winnerName} 获胜
         </div>
       </div>
     `;
@@ -126,70 +53,202 @@ function generateDimensionBars(duelResult) {
 }
 
 /**
- * 隐藏对决浮层
+ * 更新名人列表
+ * @param {Object} gameState - 游戏状态
  */
-function hideBattleOverlay() {
-  const overlay = document.getElementById('battleOverlay');
-  if (!overlay) return;
+function updateHeroesList(gameState) {
+  const heroesList = document.getElementById('heroesList');
+  if (!heroesList) return;
 
-  overlay.classList.add('fade-out');
-  overlay.classList.remove('active');
+  const allHeroes = [];
+  for (const key in gameState.provinces) {
+    const province = gameState.provinces[key];
+    const heroes = getEffectiveHeroes(key, gameState);
+    allHeroes.push(...heroes.map(h => ({
+      ...h,
+      province: province.name
+    })));
+  }
+
+  heroesList.innerHTML = allHeroes.map(hero => `
+    <div class="hero-chip">
+      ${hero.name}
+    </div>
+  `).join('');
+}
+
+/**
+ * 添加历史对决记录
+ * @param {Object} duelResult - 对决结果对象
+ */
+function addHistoryRecord(duelResult) {
+  const historyList = document.getElementById('historyList');
+  if (!historyList) return;
+
+  const winnerName = duelResult.winner === 'attacker' ? duelResult.attacker.name : duelResult.defender.name;
+  const loserName = duelResult.winner === 'attacker' ? duelResult.defender.name : duelResult.attacker.name;
+
+  const recordDiv = document.createElement('div');
+  recordDiv.className = 'history-item';
+  recordDiv.innerHTML = `
+    <span class="history-winner">${winnerName}</span>
+    <span class="history-vs">→</span>
+    <span class="history-loser">${loserName}</span>
+  `;
+
+  historyList.insertBefore(recordDiv, historyList.firstChild);
+
+  // 最多保存30条历史记录
+  while (historyList.children.length > 30) {
+    historyList.removeChild(historyList.lastChild);
+  }
 }
 
 // ========================================
-// 单轮动画
+// 高亮所有交战省份
 // ========================================
 
 /**
- * 播放单轮动画
+ * 高亮所有交战省份
+ * @param {Array} battles - 对决数组
+ * @param {Object} gameState - 游戏状态
+ * @returns {Function} cleanup函数
+ */
+function highlightAllBattleProvinces(battles, gameState) {
+  if (!chart) return () => {};
+
+  const battlePairs = battles.map(d => ({
+    attacker: d.attacker.key,
+    defender: d.defender.key
+  }));
+
+  let flashState = true;
+
+  const buildData = (isFlash) => {
+    const result = [];
+    for (const key in provinceData) {
+      const p = provinceData[key];
+      const state = gameState.provinces[key];
+      let color = p.color;
+      let borderColor = '#1a1a2e';
+      let borderWidth = 1;
+
+      // 如果已被征服，使用征服者的颜色
+      if (state && state.conquered && state.conqueredBy && state.conqueredBy !== key) {
+        const ownerProvince = provinceData[state.conqueredBy];
+        if (ownerProvince) {
+          color = ownerProvince.color;
+        }
+      }
+
+      // 检查是否是交战省份
+      const isBattleProvince = battlePairs.some(pair =>
+        key === pair.attacker || key === pair.defender
+      );
+
+      if (isBattleProvince) {
+        if (isFlash) {
+          borderColor = '#ffd700';
+          borderWidth = 3;
+        } else {
+          borderColor = '#ffd700';
+          borderWidth = 2;
+        }
+      }
+
+      result.push({
+        name: p.name,
+        key: key,
+        itemStyle: {
+          areaColor: color,
+          borderColor: borderColor,
+          borderWidth: borderWidth
+        },
+        label: {
+          show: true,
+          formatter: params => params.name
+        }
+      });
+    }
+    return result;
+  };
+
+  // 初始设置
+  chart.setOption({
+    series: [{
+      data: buildData(false)
+    }]
+  });
+
+  // 闪烁动画
+  const battleHighlightTimer = setInterval(() => {
+    flashState = !flashState;
+    chart.setOption({
+      series: [{
+        data: buildData(flashState)
+      }]
+    });
+  }, 500);
+
+  // 返回cleanup函数
+  return function cleanup() {
+    clearInterval(battleHighlightTimer);
+  };
+}
+
+// ========================================
+// 单轮动画（并发执行）
+// ========================================
+
+/**
+ * 播放单轮动画（并发执行所有对决）
  * @param {Object} gameState - 游戏状态
  * @returns {Promise<Object>} 更新后的游戏状态
  */
 async function playRound(gameState) {
-  // 1. 更新底部状态栏
-  updateStatusBar(gameState.round, getAliveProvinces(gameState).length);
-
-  // 2. 执行一轮对决
+  // 1. 执行一轮对决
   const roundResult = executeRound(gameState);
   const { gameState: newGameState, battles } = roundResult;
 
   // 保存当前游戏状态到全局，供其他函数使用
   window.currentGameState = newGameState;
 
-  // 3. 对每场对决依次播放动画
-  for (const duel of battles) {
-    const attackerKey = duel.attacker.key;
-    const defenderKey = duel.defender.key;
-    const winnerKey = duel.winner === 'attacker' ? attackerKey : defenderKey;
-    const loserKey = duel.winner === 'attacker' ? defenderKey : attackerKey;
-
-    // a. 高亮交战双方省份
-    const cleanup = highlightBattleProvinces(attackerKey, defenderKey, gameState);
-
-    // b. 显示对决浮层
-    showBattleOverlay(duel);
-
-    // c. 等待1.5秒让观众看清
-    await delay(1500);
-
-    // d. 播放征服动画
-    await animateConquest(winnerKey, loserKey, newGameState);
-
-    // e. 隐藏对决浮层
-    hideBattleOverlay();
-
-    // f. 取消高亮
-    cleanup();
-
-    // g. 更新地图颜色
-    updateMapColors(newGameState);
-
-    // 对决间隔0.3秒
-    await delay(300);
+  if (battles.length === 0) {
+    await delay(500);
+    return newGameState;
   }
 
-  // 4. 轮间停顿0.5秒
-  await delay(500);
+  // 2. 同时展示所有对决
+  updateBattlesList(battles);
+  updateHeroesList(newGameState);
+
+  // 3. 高亮所有交战省份（使用旧状态）
+  const cleanup = highlightAllBattleProvinces(battles, gameState);
+
+  // 4. 等待观众看清
+  await delay(2000);
+
+  // 5. 同时播放所有征服动画
+  const conquestPromises = battles.map(duel => {
+    const winnerKey = duel.winner === 'attacker' ? duel.attacker.key : duel.defender.key;
+    const loserKey = duel.winner === 'attacker' ? duel.defender.key : duel.attacker.key;
+    // 使用旧状态，确保失败省份显示原色
+    return animateConquest(winnerKey, loserKey, gameState, provinceData[loserKey].color);
+  });
+
+  await Promise.all(conquestPromises);
+
+  // 6. 添加所有历史记录
+  battles.forEach(duel => addHistoryRecord(duel));
+
+  // 7. 取消高亮
+  cleanup();
+
+  // 8. 更新地图颜色
+  updateMapColors(newGameState);
+
+  // 9. 轮间停顿
+  await delay(800);
 
   return newGameState;
 }
@@ -255,13 +314,16 @@ async function startAnimation() {
     // 3. 更新初始地图颜色
     updateMapColors(gameState);
 
-    // 4. 显示开场动画（标题淡入，等待2秒）
+    // 4. 初始化名人列表
+    updateHeroesList(gameState);
+
+    // 5. 显示开场动画（标题淡入，等待2秒）
     await delay(2000);
 
-    // 5. 进入主循环
+    // 6. 进入主循环
     while (true) {
       const aliveCount = getAliveProvinces(gameState).length;
-      
+
       if (aliveCount <= 1) {
         break;
       }
@@ -269,7 +331,7 @@ async function startAnimation() {
       gameState = await playRound(gameState);
     }
 
-    // 6. 播放胜利动画
+    // 7. 播放胜利动画
     const finalAlive = getAliveProvinces(gameState);
     if (finalAlive.length === 1) {
       await playVictoryAnimation(finalAlive[0], gameState);
