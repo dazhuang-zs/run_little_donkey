@@ -109,11 +109,14 @@ function updateMapColors(gameState) {
         let color = p.color;
         let heroCount = p.heroes.length;
 
-        // 如果已被征服，使用征服者的颜色
-        if (state && state.conquered && state.conqueredBy && state.conqueredBy !== key) {
-            const ownerProvince = provinceData[state.conqueredBy];
-            if (ownerProvince) {
-                color = ownerProvince.color;
+        // 如果已被征服，使用最终统治者的颜色
+        if (state && state.conquered) {
+            const rulerKey = getRuler(key, gameState);
+            if (rulerKey && rulerKey !== key) {
+                const rulerProvince = provinceData[rulerKey];
+                if (rulerProvince) {
+                    color = rulerProvince.color;
+                }
             }
             heroCount = (state.heroes ? state.heroes.length : 0) +
                         (state.absorbedHeroes ? state.absorbedHeroes.length : 0);
@@ -169,11 +172,14 @@ function highlightAllBattleProvinces(battles, gameState) {
             let borderColor = '#1a1a2e';
             let borderWidth = 1;
 
-            // 如果已被征服，使用征服者的颜色
-            if (state && state.conquered && state.conqueredBy && state.conqueredBy !== key) {
-                const ownerProvince = provinceData[state.conqueredBy];
-                if (ownerProvince) {
-                    color = ownerProvince.color;
+            // 如果已被征服，使用最终统治者的颜色
+            if (state && state.conquered) {
+                const rulerKey = getRuler(key, gameState);
+                if (rulerKey && rulerKey !== key) {
+                    const rulerProvince = provinceData[rulerKey];
+                    if (rulerProvince) {
+                        color = rulerProvince.color;
+                    }
                 }
             }
 
@@ -250,23 +256,39 @@ function animateConquest(winnerKey, loserKey, gameState, loserColor) {
         const winnerProvince = provinceData[winnerKey];
         const winnerColor = winnerProvince.color;
 
+        // 计算失败省份的当前颜色（考虑可能已被征服）
+        let currentLoserColor = provinceData[loserKey].color;
+        const loserState = gameState.provinces[loserKey];
+        if (loserState && loserState.conquered) {
+            const rulerKey = getRuler(loserKey, gameState);
+            if (rulerKey && rulerKey !== loserKey) {
+                const rulerProvince = provinceData[rulerKey];
+                if (rulerProvince) {
+                    currentLoserColor = rulerProvince.color;
+                }
+            }
+        }
+
         const data = [];
         for (const key in provinceData) {
             const p = provinceData[key];
             const state = gameState.provinces[key];
             let color = p.color;
 
-            // 如果已被征服，使用征服者的颜色
-            if (state && state.conquered && state.conqueredBy && state.conqueredBy !== key) {
-                const ownerProvince = provinceData[state.conqueredBy];
-                if (ownerProvince) {
-                    color = ownerProvince.color;
+            // 如果已被征服，使用最终统治者的颜色
+            if (state && state.conquered) {
+                const rulerKey = getRuler(key, gameState);
+                if (rulerKey && rulerKey !== key) {
+                    const rulerProvince = provinceData[rulerKey];
+                    if (rulerProvince) {
+                        color = rulerProvince.color;
+                    }
                 }
             }
 
-            // 失败省份使用传入的loserColor（动画开始时会显示这个颜色）
+            // 失败省份使用当前颜色（动画开始时会显示这个颜色）
             if (key === loserKey) {
-                color = loserColor;
+                color = currentLoserColor;
             }
 
             data.push({
@@ -285,7 +307,7 @@ function animateConquest(winnerKey, loserKey, gameState, loserColor) {
             });
         }
 
-        // 第一阶段：设置初始状态（失败省份显示loserColor）
+        // 第一阶段：设置初始状态（失败省份显示当前颜色）
         chart.setOption({
             series: [{
                 data: data,
@@ -301,7 +323,9 @@ function animateConquest(winnerKey, loserKey, gameState, loserColor) {
                         ...item,
                         itemStyle: {
                             ...item.itemStyle,
-                            areaColor: winnerColor
+                            areaColor: winnerColor,
+                            borderColor: '#ffd700', // 高亮边框
+                            borderWidth: 3
                         }
                     };
                 }

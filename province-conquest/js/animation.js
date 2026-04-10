@@ -133,11 +133,14 @@ function highlightAllBattleProvinces(battles, gameState) {
       let borderColor = '#1a1a2e';
       let borderWidth = 1;
 
-      // 如果已被征服，使用征服者的颜色
-      if (state && state.conquered && state.conqueredBy && state.conqueredBy !== key) {
-        const ownerProvince = provinceData[state.conqueredBy];
-        if (ownerProvince) {
-          color = ownerProvince.color;
+      // 如果已被征服，使用最终统治者的颜色
+      if (state && state.conquered) {
+        const rulerKey = getRuler(key, gameState);
+        if (rulerKey && rulerKey !== key) {
+          const rulerProvince = provinceData[rulerKey];
+          if (rulerProvince) {
+            color = rulerProvince.color;
+          }
         }
       }
 
