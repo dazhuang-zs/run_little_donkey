@@ -4,7 +4,7 @@
 
 from datetime import datetime
 from typing import Optional
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, field_validator
 
 
 class GameStateBase(BaseModel):
@@ -26,24 +26,27 @@ class GameStateCreate(GameStateBase):
     """创建游戏状态模型"""
     player_id: int
 
-    @validator('health', 'stress', 'hunger', 'energy', 'job_satisfaction', 'relationship')
-    def validate_resource_range(cls, v, field):
+    @field_validator('health', 'stress', 'hunger', 'energy', 'job_satisfaction', 'relationship')
+    @classmethod
+    def validate_resource_range(cls, v, info):
         """验证资源值范围"""
-        if field.name in ['health', 'energy']:
+        field_name = info.field_name
+        if field_name in ['health', 'energy']:
             if not 0 <= v <= 100:
-                raise ValueError(f'{field.name}必须在0-100之间')
-        elif field.name in ['stress', 'hunger']:
+                raise ValueError(f'{field_name}必须在0-100之间')
+        elif field_name in ['stress', 'hunger']:
             if not 0 <= v <= 100:
-                raise ValueError(f'{field.name}必须在0-100之间')
-        elif field.name == 'job_satisfaction':
+                raise ValueError(f'{field_name}必须在0-100之间')
+        elif field_name == 'job_satisfaction':
             if not 0 <= v <= 100:
                 raise ValueError(f'工作满意度必须在0-100之间')
-        elif field.name == 'relationship':
+        elif field_name == 'relationship':
             if not 0 <= v <= 100:
                 raise ValueError(f'人际关系必须在0-100之间')
         return v
 
-    @validator('money')
+    @field_validator('money')
+    @classmethod
     def validate_money(cls, v):
         """验证金钱值"""
         if v < -10000:  # 允许一定的负债
@@ -73,8 +76,7 @@ class GameStateInDB(GameStateBase):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        orm_mode = True
+    model_config = {"from_attributes": True}
 
 
 class GameState(GameStateBase):
@@ -84,8 +86,7 @@ class GameState(GameStateBase):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        orm_mode = True
+    model_config = {"from_attributes": True}
 
 
 class ActionRequest(BaseModel):

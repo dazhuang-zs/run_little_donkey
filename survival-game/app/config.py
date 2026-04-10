@@ -5,7 +5,8 @@
 
 import os
 from typing import Optional
-from pydantic import BaseSettings, PostgresDsn, validator
+from pydantic import Field
+from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
@@ -24,16 +25,7 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7  # 7天
 
     # 数据库配置
-    DATABASE_URL: Optional[str] = None
-
-    @validator("DATABASE_URL", pre=True)
-    def assemble_db_connection(cls, v: Optional[str], values: dict) -> str:
-        """组装数据库连接URL"""
-        if isinstance(v, str):
-            return v
-
-        # 默认使用SQLite
-        return "sqlite:///./survival_game.db"
+    DATABASE_URL: str = "sqlite:///./survival_game.db"
 
     # 游戏配置
     INITIAL_MONEY: int = 2000

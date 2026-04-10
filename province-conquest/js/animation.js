@@ -1,306 +1,288 @@
-// 动画控制模块
+// ========================================
+// 省份争霸 - 动画控制核心模块
+// 负责协调数据、对决、地图渲染，驱动整个自动播放动画
+// ========================================
 
-let isRunning = false;
-let isPaused = false;
-let currentStageIndex = 0;
-let animationSpeed = 2000;
+// ========================================
+// 工具函数
+// ========================================
 
 /**
- * 设置动画速度
+ * 延迟函数 - 返回Promise，用于控制动画节奏
+ * @param {number} ms - 延迟毫秒数
+ * @returns {Promise<void>}
  */
-function setSpeed(speed) {
-    animationSpeed = speed;
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// ========================================
+// 状态栏更新
+// ========================================
+
+/**
+ * 更新底部状态栏
+ * @param {number} round - 当前轮次
+ * @param {number} aliveCount - 存活省份数量
+ */
+function updateStatusBar(round, aliveCount) {
+  const roundElement = document.getElementById('roundNumber');
+  const aliveElement = document.getElementById('aliveCount');
+  
+  if (roundElement) {
+    roundElement.textContent = round;
+  }
+  if (aliveElement) {
+    aliveElement.textContent = aliveCount;
+  }
+}
+
+// ========================================
+// 对决浮层展示
+// ========================================
+
+/**
+ * 显示对决浮层
+ * @param {Object} duelResult - 对决结果对象
+ */
+function showBattleOverlay(duelResult) {
+  const overlay = document.getElementById('battleOverlay');
+  if (!overlay) return;
+
+  // 更新省份名称
+  const attackerNameEl = document.getElementById('attackerName');
+  const defenderNameEl = document.getElementById('defenderName');
+  
+  if (attackerNameEl) attackerNameEl.textContent = duelResult.attacker.name;
+  if (defenderNameEl) defenderNameEl.textContent = duelResult.defender.name;
+
+  // 更新名人信息（显示第一个名人作为代表）
+  const attackerHeroEl = document.getElementById('attackerHero');
+  const defenderHeroEl = document.getElementById('defenderHero');
+  
+  const attackerHeroes = getEffectiveHeroes(duelResult.attacker.key, { provinces: window.currentGameState?.provinces || {} });
+  const defenderHeroes = getEffectiveHeroes(duelResult.defender.key, { provinces: window.currentGameState?.provinces || {} });
+  
+  if (attackerHeroEl) {
+    const firstHero = attackerHeroes[0];
+    attackerHeroEl.textContent = firstHero ? `${firstHero.name} · ${firstHero.title}` : '-';
+  }
+  if (defenderHeroEl) {
+    const firstHero = defenderHeroes[0];
+    defenderHeroEl.textContent = firstHero ? `${firstHero.name} · ${firstHero.title}` : '-';
+  }
+
+  // 生成6维度对比条形
+  const dimensionsContainer = document.getElementById('battleDimensions');
+  if (dimensionsContainer) {
+    dimensionsContainer.innerHTML = generateDimensionBars(duelResult);
+  }
+
+  // 更新结果文本
+  const resultEl = document.getElementById('battleResult');
+  if (resultEl) {
+    const winnerName = duelResult.winner === 'attacker' ? duelResult.attacker.name : duelResult.defender.name;
+    resultEl.textContent = `${winnerName} 获胜！`;
+    resultEl.className = 'battle-result show victory';
+  }
+
+  // 显示浮层
+  overlay.classList.add('active');
+  overlay.classList.remove('fade-out');
 }
 
 /**
- * 开始征服动画
+ * 生成维度对比条形的HTML
+ * @param {Object} duelResult - 对决结果
+ * @returns {string} HTML字符串
  */
-async function startConquest() {
-    if (isRunning) return;
+function generateDimensionBars(duelResult) {
+  const { dimensions, attacker, defender, winner } = duelResult;
+  
+  return dimensions.map(dim => {
+    const total = dim.attackerValue + dim.defenderValue;
+    const attackerWidth = total > 0 ? (dim.attackerValue / total * 100) : 50;
+    const defenderWidth = total > 0 ? (dim.defenderValue / total * 100) : 50;
     
-    isRunning = true;
-    isPaused = false;
+    const attackerWin = dim.winner === 'attacker';
+    const defenderWin = dim.winner === 'defender';
     
-    updateButtons();
-    await runConquestLoop();
+    return `
+      <div class="dimension-row">
+        <div class="dimension-label">${dim.name}</div>
+        <div class="dimension-bars">
+          <div class="bar-side left">
+            <span class="bar-value">${dim.attackerValue}</span>
+            <div class="bar-fill ${attackerWin ? 'winner' : ''}" style="width: ${attackerWidth}%"></div>
+          </div>
+          <div class="bar-side right">
+            <div class="bar-fill ${defenderWin ? 'winner' : ''}" style="width: ${defenderWidth}%"></div>
+            <span class="bar-value">${dim.defenderValue}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
 }
 
 /**
- * 暂停动画
+ * 隐藏对决浮层
  */
-function pauseConquest() {
-    isPaused = true;
-    updateButtons();
+function hideBattleOverlay() {
+  const overlay = document.getElementById('battleOverlay');
+  if (!overlay) return;
+
+  overlay.classList.add('fade-out');
+  overlay.classList.remove('active');
 }
 
-/**
- * 继续动画
- */
-function resumeConquest() {
-    isPaused = false;
-    updateButtons();
-    runConquestLoop();
-}
+// ========================================
+// 单轮动画
+// ========================================
 
 /**
- * 重置动画
+ * 播放单轮动画
+ * @param {Object} gameState - 游戏状态
+ * @returns {Promise<Object>} 更新后的游戏状态
  */
-function resetConquest() {
-    isRunning = false;
-    isPaused = false;
-    currentStageIndex = 0;
-    
-    // 重置省份状态
-    for (const key in window.provinceData) {
-        window.provinceData[key].conquered = (key === 'shaanxi');
+async function playRound(gameState) {
+  // 1. 更新底部状态栏
+  updateStatusBar(gameState.round, getAliveProvinces(gameState).length);
+
+  // 2. 执行一轮对决
+  const roundResult = executeRound(gameState);
+  const { gameState: newGameState, battles } = roundResult;
+
+  // 保存当前游戏状态到全局，供其他函数使用
+  window.currentGameState = newGameState;
+
+  // 3. 对每场对决依次播放动画
+  for (const duel of battles) {
+    const attackerKey = duel.attacker.key;
+    const defenderKey = duel.defender.key;
+    const winnerKey = duel.winner === 'attacker' ? attackerKey : defenderKey;
+    const loserKey = duel.winner === 'attacker' ? defenderKey : attackerKey;
+
+    // a. 高亮交战双方省份
+    const cleanup = highlightBattleProvinces(attackerKey, defenderKey, gameState);
+
+    // b. 显示对决浮层
+    showBattleOverlay(duel);
+
+    // c. 等待1.5秒让观众看清
+    await delay(1500);
+
+    // d. 播放征服动画
+    await animateConquest(winnerKey, loserKey, newGameState);
+
+    // e. 隐藏对决浮层
+    hideBattleOverlay();
+
+    // f. 取消高亮
+    cleanup();
+
+    // g. 更新地图颜色
+    updateMapColors(newGameState);
+
+    // 对决间隔0.3秒
+    await delay(300);
+  }
+
+  // 4. 轮间停顿0.5秒
+  await delay(500);
+
+  return newGameState;
+}
+
+// ========================================
+// 胜利动画
+// ========================================
+
+/**
+ * 播放胜利动画
+ * @param {string} championKey - 冠军省份key
+ * @param {Object} gameState - 游戏状态
+ */
+async function playVictoryAnimation(championKey, gameState) {
+  // 1. 等待1秒
+  await delay(1000);
+
+  const overlay = document.getElementById('victoryOverlay');
+  const provinceEl = document.getElementById('victoryProvince');
+  const heroesListEl = document.getElementById('victoryHeroesList');
+
+  if (!overlay) return;
+
+  // 2. 显示胜利浮层
+  overlay.classList.add('active');
+
+  // 3. 设置冠军省份名称
+  const championProvince = provinceData[championKey];
+  if (provinceEl && championProvince) {
+    provinceEl.textContent = championProvince.name;
+  }
+
+  // 4. 渲染雷达图
+  renderVictoryRadar(championKey, gameState);
+
+  // 5. 生成名人列表
+  if (heroesListEl) {
+    const heroes = getEffectiveHeroes(championKey, gameState);
+    heroesListEl.innerHTML = heroes.map((hero, index) => `
+      <div class="hero-tag" style="animation-delay: ${index * 0.1}s">
+        ${hero.name} · ${hero.title}
+      </div>
+    `).join('');
+  }
+}
+
+// ========================================
+// 自动播放主循环
+// ========================================
+
+/**
+ * 自动播放主循环
+ */
+async function startAnimation() {
+  try {
+    // 1. 初始化地图
+    await initMap();
+
+    // 2. 初始化游戏状态
+    let gameState = initGameState();
+    window.currentGameState = gameState;
+
+    // 3. 更新初始地图颜色
+    updateMapColors(gameState);
+
+    // 4. 显示开场动画（标题淡入，等待2秒）
+    await delay(2000);
+
+    // 5. 进入主循环
+    while (true) {
+      const aliveCount = getAliveProvinces(gameState).length;
+      
+      if (aliveCount <= 1) {
+        break;
+      }
+
+      gameState = await playRound(gameState);
     }
-    
-    // 更新UI
-    window.updateMap();
-    updateStatus();
-    clearLog();
-    clearBattlePanel();
-    
-    // 重置英雄榜
-    updateHeroesList();
-    
-    updateButtons();
-}
 
-/**
- * 征服主循环
- */
-async function runConquestLoop() {
-    while (isRunning && !checkVictory(window.provinceData)) {
-        if (isPaused) return;
-        
-        // 获取下一个目标
-        const targetKey = getNextTarget(window.provinceData);
-        if (!targetKey) {
-            showVictory();
-            break;
-        }
-        
-        // 执行对决
-        const currentStage = getCurrentStage();
-        document.getElementById('currentStage').textContent = currentStage;
-        
-        await conquerProvince(targetKey);
-        
-        // 等待
-        await sleep(animationSpeed);
+    // 6. 播放胜利动画
+    const finalAlive = getAliveProvinces(gameState);
+    if (finalAlive.length === 1) {
+      await playVictoryAnimation(finalAlive[0], gameState);
     }
-    
-    if (checkVictory(window.provinceData)) {
-        showVictory();
-    }
+  } catch (error) {
+    console.error('动画播放出错:', error);
+  }
 }
 
-/**
- * 征服单个省份
- */
-async function conquerProvince(targetKey) {
-    const target = window.provinceData[targetKey];
-    
-    // 显示对决面板
-    showBattlePanel(targetKey);
-    
-    // 高亮目标省份
-    window.highlightProvince(targetKey);
-    
-    await sleep(500);
-    
-    // 执行对决计算
-    const result = executeBattle(targetKey, window.provinceData);
-    
-    // 更新对决面板
-    updateBattleResult(result);
-    
-    await sleep(800);
-    
-    if (result.victory) {
-        // 征服成功
-        window.provinceData[targetKey].conquered = true;
-        window.updateMap();
-        
-        // 添加日志
-        addLog(`✅ 征服 ${target.name}！${target.hero} 归顺秦始皇阵营`);
-        
-        // 更新英雄榜
-        updateHeroesList();
-    } else {
-        // 征服失败（这里简化处理，确保一定能征服）
-        addLog(`⚠️ ${target.name} 抵抗顽强，再次进攻...`);
-        // 实际上重新尝试
-        window.provinceData[targetKey].conquered = true;
-        window.updateMap();
-        updateHeroesList();
-    }
-    
-    // 更新状态
-    updateStatus();
-}
+// ========================================
+// 页面加载自动启动
+// ========================================
 
-/**
- * 显示对决面板
- */
-function showBattlePanel(targetKey) {
-    const target = window.provinceData[targetKey];
-    const panel = document.getElementById('battlePanel');
-    
-    panel.classList.remove('hidden');
-    
-    document.getElementById('attackerName').textContent = '秦始皇';
-    document.getElementById('attackerProvince').textContent = '陕西';
-    document.getElementById('defenderName').textContent = target.hero;
-    document.getElementById('defenderProvince').textContent = target.name;
-    
-    document.getElementById('attackerPower').textContent = calculateAttackerPower(window.provinceData);
-    document.getElementById('defenderPower').textContent = calculateDefenderPower(target);
-}
-
-/**
- * 更新对决结果
- */
-function updateBattleResult(result) {
-    const resultDiv = document.getElementById('battleResult');
-    
-    document.getElementById('attackerPower').textContent = result.attacker.finalPower;
-    document.getElementById('defenderPower').textContent = result.defender.finalPower;
-    
-    if (result.victory) {
-        resultDiv.textContent = '🎉 胜利！征服成功！';
-        resultDiv.className = 'battle-result';
-    } else {
-        resultDiv.textContent = '⚔️ 对方抵抗顽强...';
-        resultDiv.className = 'battle-result defeat';
-    }
-}
-
-/**
- * 清除对决面板
- */
-function clearBattlePanel() {
-    document.getElementById('battlePanel').classList.add('hidden');
-    document.getElementById('battleResult').textContent = '';
-}
-
-/**
- * 更新状态显示
- */
-function updateStatus() {
-    let count = 0;
-    let totalPower = 0;
-    
-    for (const key in window.provinceData) {
-        if (window.provinceData[key].conquered) {
-            count++;
-            totalPower += window.provinceData[key].power;
-        }
-    }
-    
-    document.getElementById('conqueredCount').textContent = count;
-    document.getElementById('totalPower').textContent = totalPower;
-}
-
-/**
- * 更新英雄榜
- */
-function updateHeroesList() {
-    const list = document.getElementById('heroesList');
-    list.innerHTML = '';
-    
-    const heroes = [];
-    for (const key in window.provinceData) {
-        if (window.provinceData[key].conquered) {
-            heroes.push({
-                name: window.provinceData[key].hero,
-                province: window.provinceData[key].name,
-                type: window.provinceData[key].type
-            });
-        }
-    }
-    
-    for (const hero of heroes) {
-        const item = document.createElement('div');
-        item.className = 'hero-item';
-        item.innerHTML = `
-            <span class="hero-name">${hero.name}</span>
-            <span class="hero-title">${hero.province} · ${hero.type}</span>
-        `;
-        list.appendChild(item);
-    }
-}
-
-/**
- * 获取当前阶段
- */
-function getCurrentStage() {
-    let count = 0;
-    for (const key in window.provinceData) {
-        if (window.provinceData[key].conquered) count++;
-    }
-    
-    if (count <= 5) return '西北统一';
-    if (count <= 10) return '南下蜀地';
-    if (count <= 15) return '西南平定';
-    if (count <= 20) return '华南进取';
-    if (count <= 25) return '东进中原';
-    if (count <= 30) return '燕赵之战';
-    return '关外征伐';
-}
-
-/**
- * 添加日志
- */
-function addLog(message) {
-    const log = document.getElementById('conquestLog');
-    const item = document.createElement('div');
-    item.className = 'log-item';
-    const time = new Date().toLocaleTimeString();
-    item.textContent = `[${time}] ${message}`;
-    log.insertBefore(item, log.firstChild);
-}
-
-/**
- * 清除日志
- */
-function clearLog() {
-    document.getElementById('conquestLog').innerHTML = '';
-}
-
-/**
- * 显示胜利
- */
-function showVictory() {
-    isRunning = false;
-    updateButtons();
-    
-    addLog('🏆 天下一统！秦始皇完成霸业！');
-    document.getElementById('currentStage').textContent = '天下一统';
-    
-    // 可以添加庆祝动画
-}
-
-/**
- * 更新按钮状态
- */
-function updateButtons() {
-    document.getElementById('btnStart').disabled = isRunning;
-    document.getElementById('btnPause').disabled = !isRunning || isPaused;
-    document.getElementById('btnReset').disabled = isRunning && !isPaused;
-}
-
-/**
- * 睡眠函数
- */
-function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-// 导出函数
-window.setSpeed = setSpeed;
-window.startConquest = startConquest;
-window.pauseConquest = pauseConquest;
-window.resumeConquest = resumeConquest;
-window.resetConquest = resetConquest;
+window.addEventListener('DOMContentLoaded', () => {
+  startAnimation();
+});

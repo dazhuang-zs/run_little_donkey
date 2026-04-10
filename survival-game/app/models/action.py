@@ -2,6 +2,8 @@
 动作模型
 """
 
+from datetime import datetime
+from typing import Optional
 from pydantic import BaseModel
 
 
@@ -30,16 +32,14 @@ class ActionInDB(ActionBase):
     """数据库中的动作模型"""
     id: int
 
-    class Config:
-        orm_mode = True
+    model_config = {"from_attributes": True}
 
 
 class Action(ActionBase):
     """返回给客户端的动作模型"""
     id: int
 
-    class Config:
-        orm_mode = True
+    model_config = {"from_attributes": True}
 
 
 class PlayerActionBase(BaseModel):
@@ -61,9 +61,4 @@ class PlayerActionInDB(PlayerActionBase):
     id: int
     executed_at: datetime
 
-    class Config:
-        orm_mode = True
-
-
-from datetime import datetime
-from typing import Optional
+    model_config = {"from_attributes": True}

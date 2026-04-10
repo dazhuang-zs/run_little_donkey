@@ -4,7 +4,7 @@
 
 from datetime import datetime
 from typing import Optional
-from pydantic import BaseModel, EmailStr, validator
+from pydantic import BaseModel, EmailStr, field_validator
 
 
 class PlayerBase(BaseModel):
@@ -17,7 +17,8 @@ class PlayerCreate(PlayerBase):
     """创建玩家模型"""
     password: str
 
-    @validator('username')
+    @field_validator('username')
+    @classmethod
     def username_alphanumeric(cls, v):
         """用户名只能包含字母、数字和下划线"""
         if not v.replace('_', '').replace('-', '').isalnum():
@@ -26,7 +27,8 @@ class PlayerCreate(PlayerBase):
             raise ValueError('用户名长度必须在3-50个字符之间')
         return v
 
-    @validator('password')
+    @field_validator('password')
+    @classmethod
     def password_strength(cls, v):
         """密码强度验证"""
         if len(v) < 6:
@@ -50,8 +52,7 @@ class PlayerInDB(PlayerBase):
     total_games_played: int = 0
     best_score: int = 0
 
-    class Config:
-        orm_mode = True
+    model_config = {"from_attributes": True}
 
 
 class Player(PlayerBase):
@@ -63,8 +64,7 @@ class Player(PlayerBase):
     total_games_played: int
     best_score: int
 
-    class Config:
-        orm_mode = True
+    model_config = {"from_attributes": True}
 
 
 class Token(BaseModel):
@@ -81,22 +81,3 @@ class TokenPayload(BaseModel):
     exp: int  # 过期时间
 
 
-# SQLAlchemy 模型
-from sqlalchemy import Column, Integer, String, Boolean, DateTime
-from sqlalchemy.sql import func
-from app.database import Base
-
-
-class PlayerDB(Base):
-    """玩家数据库模型"""
-    __tablename__ = "players"
-
-    id = Column(Integer, primary_key=True, index=True)
-    username = Column(String(50), unique=True, index=True, nullable=False)
-    email = Column(String(100), unique=True, index=True, nullable=True)
-    password_hash = Column(String(255), nullable=False)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    last_login_at = Column(DateTime(timezone=True), nullable=True)
-    is_active = Column(Boolean, default=True)
-    total_games_played = Column(Integer, default=0)
-    best_score = Column(Integer, default=0)
