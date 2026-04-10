@@ -80,7 +80,7 @@ const provinceData = {
 
   // 河南 - 中原腹地，华夏文明发源地
   henan: createProvince({
-    name: "河南",
+    name: "河南省",
     color: "#e74c3c",
     heroes: [
       { name: "诸葛亮", title: "卧龙先生", stats: { command: 92, martial: 45, wisdom: 98, politics: 96, charisma: 95, craft: 88 } },
@@ -97,7 +97,7 @@ const provinceData = {
 
   // 陕西 - 三秦大地，帝王之乡
   shaanxi: createProvince({
-    name: "陕西",
+    name: "陕西省",
     color: "#c0392b",
     heroes: [
       { name: "秦始皇", title: "千古一帝", stats: { command: 88, martial: 70, wisdom: 92, politics: 98, charisma: 85, craft: 75 } },
@@ -113,7 +113,7 @@ const provinceData = {
 
   // 山东 - 齐鲁大地，孔孟之乡
   shandong: createProvince({
-    name: "山东",
+    name: "山东省",
     color: "#2980b9",
     heroes: [
       { name: "孙武", title: "兵圣", stats: { command: 98, martial: 75, wisdom: 96, politics: 85, charisma: 80, craft: 90 } },
@@ -130,7 +130,7 @@ const provinceData = {
 
   // 江苏 - 江淮重镇，兵仙故里
   jiangsu: createProvince({
-    name: "江苏",
+    name: "江苏省",
     color: "#3498db",
     heroes: [
       { name: "韩信", title: "兵仙", stats: { command: 100, martial: 70, wisdom: 95, politics: 30, charisma: 75, craft: 85 } },
@@ -146,7 +146,7 @@ const provinceData = {
 
   // 浙江 - 吴越故地，人杰地灵
   zhejiang: createProvince({
-    name: "浙江",
+    name: "浙江省",
     color: "#1abc9c",
     heroes: [
       { name: "勾践", title: "卧薪尝胆", stats: { command: 88, martial: 75, wisdom: 92, politics: 90, charisma: 85, craft: 70 } },
@@ -163,7 +163,7 @@ const provinceData = {
 
   // 湖北 - 荆楚大地，九省通衢
   hubei: createProvince({
-    name: "湖北",
+    name: "湖北省",
     color: "#e67e22",
     heroes: [
       { name: "屈原", title: "诗祖", stats: { command: 45, martial: 40, wisdom: 92, politics: 75, charisma: 88, craft: 95 } },
@@ -179,7 +179,7 @@ const provinceData = {
 
   // 安徽 - 江淮之间，帝王之乡
   anhui: createProvince({
-    name: "安徽",
+    name: "安徽省",
     color: "#d35400",
     heroes: [
       { name: "朱元璋", title: "明太祖", stats: { command: 94, martial: 80, wisdom: 90, politics: 96, charisma: 88, craft: 55 } },
@@ -195,7 +195,7 @@ const provinceData = {
 
   // 四川 - 天府之国，蜀汉基业
   sichuan: createProvince({
-    name: "四川",
+    name: "四川省",
     color: "#9b59b6",
     heroes: [
       { name: "诸葛亮", title: "武侯", stats: { command: 92, martial: 45, wisdom: 98, politics: 96, charisma: 95, craft: 88 } },
@@ -211,7 +211,7 @@ const provinceData = {
 
   // 河北 - 燕赵大地，慷慨悲歌
   hebei: createProvince({
-    name: "河北",
+    name: "河北省",
     color: "#8e44ad",
     heroes: [
       { name: "刘备", title: "昭烈帝", stats: { command: 82, martial: 72, wisdom: 85, politics: 88, charisma: 98, craft: 60 } },
@@ -229,7 +229,7 @@ const provinceData = {
 
   // 山西 - 三晋大地，表里山河
   shanxi: createProvince({
-    name: "山西",
+    name: "山西省",
     color: "#16a085",
     heroes: [
       { name: "关羽", title: "武圣", stats: { command: 92, martial: 98, wisdom: 75, politics: 60, charisma: 96, craft: 55 } },
@@ -243,7 +243,7 @@ const provinceData = {
 
   // 甘肃 - 河西走廊，丝路重镇
   gansu: createProvince({
-    name: "甘肃",
+    name: "甘肃省",
     color: "#27ae60",
     heroes: [
       { name: "李广", title: "飞将军", stats: { command: 90, martial: 92, wisdom: 70, politics: 35, charisma: 90, craft: 55 } },
@@ -256,7 +256,7 @@ const provinceData = {
 
   // 湖南 - 潇湘之地，惟楚有才
   hunan: createProvince({
-    name: "湖南",
+    name: "湖南省",
     color: "#f39c12",
     heroes: [
       { name: "曾国藩", title: "晚清中兴", stats: { command: 88, martial: 65, wisdom: 90, politics: 92, charisma: 85, craft: 75 } },
@@ -270,7 +270,7 @@ const provinceData = {
 
   // 江西 - 物华天宝，人杰地灵
   jiangxi: createProvince({
-    name: "江西",
+    name: "江西省",
     color: "#f1c40f",
     heroes: [
       { name: "陶渊明", title: "田园诗人", stats: { command: 35, martial: 40, wisdom: 90, politics: 55, charisma: 88, craft: 92 } },
@@ -284,7 +284,7 @@ const provinceData = {
 
   // 福建 - 八闽大地，海上丝路
   fujian: createProvince({
-    name: "福建",
+    name: "福建省",
     color: "#2ecc71",
     heroes: [
       { name: "郑成功", title: "国姓爷", stats: { command: 92, martial: 88, wisdom: 85, politics: 82, charisma: 94, craft: 75 } },
@@ -298,7 +298,7 @@ const provinceData = {
 
   // 广东 - 岭南之地，开放前沿
   guangdong: createProvince({
-    name: "广东",
+    name: "广东省",
     color: "#e74c3c",
     heroes: [
       { name: "孙中山", title: "国父", stats: { command: 75, martial: 55, wisdom: 92, politics: 95, charisma: 98, craft: 70 } },
@@ -312,7 +312,7 @@ const provinceData = {
 
   // 辽宁 - 关外重镇，满清发源
   liaoning: createProvince({
-    name: "辽宁",
+    name: "辽宁省",
     color: "#3498db",
     heroes: [
       { name: "努尔哈赤", title: "清太祖", stats: { command: 95, martial: 90, wisdom: 88, politics: 92, charisma: 90, craft: 65 } },
@@ -325,7 +325,7 @@ const provinceData = {
 
   // 内蒙古 - 草原帝国，天骄故里
   neimenggu: createProvince({
-    name: "内蒙古",
+    name: "内蒙古自治区",
     color: "#1abc9c",
     heroes: [
       { name: "成吉思汗", title: "一代天骄", stats: { command: 100, martial: 95, wisdom: 92, politics: 95, charisma: 98, craft: 70 } },
@@ -339,7 +339,7 @@ const provinceData = {
 
   // 北京 - 天子脚下，首善之区
   beijing: createProvince({
-    name: "北京",
+    name: "北京市",
     color: "#c0392b",
     heroes: [
       { name: "于谦", title: "救时宰相", stats: { command: 88, martial: 72, wisdom: 92, politics: 95, charisma: 90, craft: 65 } },
@@ -352,7 +352,7 @@ const provinceData = {
 
   // 云南 - 彩云之南，民族融合
   yunnan: createProvince({
-    name: "云南",
+    name: "云南省",
     color: "#9b59b6",
     heroes: [
       { name: "郑和", title: "三宝太监", stats: { command: 95, martial: 78, wisdom: 90, politics: 85, charisma: 92, craft: 88 } },
@@ -368,7 +368,7 @@ const provinceData = {
 
   // 天津 - 九河下梢，京师门户
   tianjin: createProvince({
-    name: "天津",
+    name: "天津市",
     color: "#2980b9",
     heroes: [
       { name: "戚继光", title: "抗倭名将", stats: { command: 95, martial: 90, wisdom: 88, politics: 75, charisma: 90, craft: 85 } },
@@ -380,7 +380,7 @@ const provinceData = {
 
   // 上海 - 东方明珠，十里洋场
   shanghai: createProvince({
-    name: "上海",
+    name: "上海市",
     color: "#e67e22",
     heroes: [
       { name: "徐光启", title: "科学先驱", stats: { command: 55, martial: 45, wisdom: 92, politics: 82, charisma: 80, craft: 95 } },
@@ -392,7 +392,7 @@ const provinceData = {
 
   // 重庆 - 山城雾都，巴渝故地
   chongqing: createProvince({
-    name: "重庆",
+    name: "重庆市",
     color: "#d35400",
     heroes: [
       { name: "秦良玉", title: "巾帼英雄", stats: { command: 88, martial: 85, wisdom: 82, politics: 75, charisma: 88, craft: 60 } },
@@ -404,7 +404,7 @@ const provinceData = {
 
   // 贵州 - 黔中大地，夜郎故国
   guizhou: createProvince({
-    name: "贵州",
+    name: "贵州省",
     color: "#16a085",
     heroes: [
       { name: "王阳明", title: "龙场悟道", stats: { command: 78, martial: 68, wisdom: 98, politics: 85, charisma: 92, craft: 88 } },
@@ -416,7 +416,7 @@ const provinceData = {
 
   // 广西 - 八桂大地，岭南要地
   guangxi: createProvince({
-    name: "广西",
+    name: "广西壮族自治区",
     color: "#27ae60",
     heroes: [
       { name: "冯子材", title: "镇南关大捷", stats: { command: 88, martial: 85, wisdom: 80, politics: 70, charisma: 86, craft: 60 } },
@@ -428,7 +428,7 @@ const provinceData = {
 
   // 海南 - 天涯海角，南海明珠
   hainan: createProvince({
-    name: "海南",
+    name: "海南省",
     color: "#f39c12",
     heroes: [
       { name: "海瑞", title: "清官典范", stats: { command: 60, martial: 55, wisdom: 88, politics: 92, charisma: 88, craft: 65 } },
@@ -440,7 +440,7 @@ const provinceData = {
 
   // 台湾 - 宝岛台湾，祖国明珠
   taiwan: createProvince({
-    name: "台湾",
+    name: "台湾省",
     color: "#1abc9c",
     heroes: [
       { name: "郑成功", title: "延平郡王", stats: { command: 92, martial: 88, wisdom: 85, politics: 82, charisma: 94, craft: 75 } },
@@ -452,7 +452,7 @@ const provinceData = {
 
   // 香港 - 东方之珠
   hongkong: createProvince({
-    name: "香港",
+    name: "香港特别行政区",
     color: "#e74c3c",
     heroes: [
       { name: "何东", title: "香港首富", stats: { command: 65, martial: 40, wisdom: 88, politics: 75, charisma: 88, craft: 82 } }
@@ -463,7 +463,7 @@ const provinceData = {
 
   // 澳门 - 濠江明珠
   macau: createProvince({
-    name: "澳门",
+    name: "澳门特别行政区",
     color: "#3498db",
     heroes: [
       { name: "郑观应", title: "维新思想家", stats: { command: 50, martial: 40, wisdom: 90, politics: 82, charisma: 80, craft: 85 } }
@@ -474,7 +474,7 @@ const provinceData = {
 
   // 吉林 - 白山黑水
   jilin: createProvince({
-    name: "吉林",
+    name: "吉林省",
     color: "#9b59b6",
     heroes: [
       { name: "鳌拜", title: "满洲第一勇士", stats: { command: 85, martial: 95, wisdom: 55, politics: 70, charisma: 75, craft: 50 } },
@@ -486,7 +486,7 @@ const provinceData = {
 
   // 黑龙江 - 北国粮仓
   heilongjiang: createProvince({
-    name: "黑龙江",
+    name: "黑龙江省",
     color: "#2ecc71",
     heroes: [
       { name: "完颜阿骨打", title: "金太祖", stats: { command: 92, martial: 90, wisdom: 85, politics: 88, charisma: 90, craft: 60 } },
@@ -498,7 +498,7 @@ const provinceData = {
 
   // 青海 - 三江之源
   qinghai: createProvince({
-    name: "青海",
+    name: "青海省",
     color: "#f1c40f",
     heroes: [
       { name: "无恤", title: "吐谷浑名将", stats: { command: 82, martial: 78, wisdom: 75, politics: 65, charisma: 78, craft: 55 } },
@@ -510,7 +510,7 @@ const provinceData = {
 
   // 宁夏 - 塞上江南
   ningxia: createProvince({
-    name: "宁夏",
+    name: "宁夏回族自治区",
     color: "#e67e22",
     heroes: [
       { name: "李元昊", title: "西夏景宗", stats: { command: 90, martial: 85, wisdom: 88, politics: 85, charisma: 88, craft: 70 } },
@@ -522,7 +522,7 @@ const provinceData = {
 
   // 新疆 - 西域明珠
   xinjiang: createProvince({
-    name: "新疆",
+    name: "新疆维吾尔自治区",
     color: "#d35400",
     heroes: [
       { name: "班超", title: "西域都护", stats: { command: 92, martial: 85, wisdom: 90, politics: 88, charisma: 92, craft: 65 } },
@@ -534,7 +534,7 @@ const provinceData = {
 
   // 西藏 - 雪域高原
   xizang: createProvince({
-    name: "西藏",
+    name: "西藏自治区",
     color: "#8e44ad",
     heroes: [
       { name: "松赞干布", title: "吐蕃赞普", stats: { command: 88, martial: 85, wisdom: 88, politics: 92, charisma: 90, craft: 75 } },
