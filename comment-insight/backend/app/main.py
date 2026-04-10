@@ -8,14 +8,25 @@ from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
 import re
 
+# 导入爬虫模块
+from app.scraper import XiaohongshuScraper
+
 app = FastAPI(title="评论洞察助手", version="1.0.0")
 
 # 配置静态文件和模板
 templates = Jinja2Templates(directory="templates")
 
+# 全局爬虫实例（后续可改为依赖注入）
+scraper = XiaohongshuScraper()
+
 
 class AnalyzeRequest(BaseModel):
     url: str
+
+
+class ScraperTestRequest(BaseModel):
+    note_id: str
+    cookies: str = ""
 
 
 def parse_url(url: str) -> Dict[str, str]:
@@ -150,6 +161,30 @@ def get_platforms():
             {"name": "dianping", "display": "大众点评"},
             {"name": "douyin", "display": "抖音"}
         ]
+    }
+
+
+@app.post("/api/test-scraper")
+def test_scraper(request: ScraperTestRequest):
+    """
+    测试小红书爬虫 API
+    用于获取真实评论数据
+    """
+    # 更新 Cookie
+    if request.cookies:
+        scraper.set_cookies(request.cookies)
+    
+    # 获取评论（先获取 1 页测试）
+    result = scraper.get_comments(request.note_id, page=1, page_size=20)
+    
+    return {
+        "note_id": request.note_id,
+        "comments": result.get("comments", []),
+        "has_more": result.get("has_more", False),
+        "total": result.get("total", 0),
+        "page_size": result.get("page_size", 0),
+        "cursor": result.get("cursor", ""),
+        "error": result.get("error", "")
     }
 
 
