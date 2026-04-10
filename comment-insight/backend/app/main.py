@@ -1,7 +1,7 @@
 """
 评论洞察助手 - MVP 后端
 """
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
@@ -119,7 +119,7 @@ def analyze_comments_mock(platform: str, content_id: str) -> Dict[str, Any]:
 
 # 前端页面路由
 @app.get("/")
-def home(request):
+def home(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
 
@@ -127,11 +127,7 @@ def home(request):
 def analyze(request: AnalyzeRequest):
     """分析评论接口"""
     
-    try:
-        parsed = parse_url(request.url)
-    except HTTPException as e:
-        return {"error": str(e.detail)}
-    
+    parsed = parse_url(request.url)
     result = analyze_comments_mock(parsed["platform"], parsed["content_id"])
     
     return {
