@@ -100,17 +100,24 @@ def get_note_id_from_url(url: str) -> tuple:
 def parse_note_info(raw_data: dict) -> Optional[dict]:
     """解析笔记原始数据"""
     try:
-        note_card = raw_data.get('noteCard', {})
-        user = note_card.get('user', {})
+        # 实际 API 返回: data.items[0].note_card
+        data = raw_data.get('data', {})
+        items = data.get('items', [])
+        if items:
+            note_card = items[0].get('note_card', {})
+        else:
+            note_card = raw_data.get('noteCard', {})
         
         # 处理图片
         images = []
-        image_list = note_card.get('imageList', [])
+        image_list = note_card.get('image_list', [])
         for img in image_list:
-            if 'urlDefaultSize' in img:
-                images.append(img['urlDefaultSize'])
+            if 'url_default' in img:
+                images.append(img['url_default'])
             elif 'url' in img:
                 images.append(img['url'])
+            elif 'url_pre' in img:
+                images.append(img['url_pre'])
         
         # 处理视频
         video_url = None
@@ -120,27 +127,39 @@ def parse_note_info(raw_data: dict) -> Optional[dict]:
         
         # 处理标签
         tags = []
-        for tag in note_card.get('tagList', []):
+        for tag in note_card.get('tag_list', []):
             if 'name' in tag:
                 tags.append(tag['name'])
         
+        # 处理互动数据
+        interact = note_card.get('interact_info', {})
+        liked_count = interact.get('liked_count', '0')
+        collected_count = interact.get('collected_count', '0')
+        comment_count = interact.get('comment_count', '0')
+        shared_count = interact.get('share_count', '0')
+        
+        # 处理用户
+        user = note_card.get('user', {})
+        
         return {
-            'note_id': note_card.get('noteId', ''),
-            'title': note_card.get('title', ''),
+            'note_id': note_card.get('note_id', ''),
+            'title': note_card.get('display_title', '') or note_card.get('title', ''),
             'desc': note_card.get('desc', ''),
-            'user_nickname': user.get('nickname', ''),
-            'user_id': user.get('userId', ''),
-            'liked_count': note_card.get('interactInfo', {}).get('likedCount', 0),
-            'collected_count': note_card.get('interactInfo', {}).get('collectedCount', 0),
-            'commented_count': note_card.get('interactInfo', {}).get('commentedCount', 0),
-            'shared_count': note_card.get('interactInfo', {}).get('sharedCount', 0),
-            'cover': note_card.get('cover', {}).get('urlDefault', ''),
+            'user_nickname': user.get('nick_name', '') or user.get('nickname', ''),
+            'user_id': user.get('user_id', '') or user.get('userId', ''),
+            'liked_count': int(liked_count) if str(liked_count).isdigit() else liked_count,
+            'collected_count': int(collected_count) if str(collected_count).isdigit() else collected_count,
+            'commented_count': int(comment_count) if str(comment_count).isdigit() else comment_count,
+            'shared_count': int(shared_count) if str(shared_count).isdigit() else shared_count,
+            'cover': note_card.get('cover', {}).get('url_default', ''),
             'images': images,
             'video': video_url,
             'tags': tags,
             'time': note_card.get('time', ''),
         }
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         print(f"解析笔记信息失败: {e}")
         return None
 
@@ -311,6 +330,8 @@ async def scrape_note(note_url: str = Form(...)):
         if not success:
             return {"success": False, "error": msg}
         
+        if 'data' in note_info:
+        
         # 解析数据
         parsed = parse_note_info(note_info)
         if parsed:
@@ -382,18 +403,46 @@ async def search_notes(
         if not success:
             return {"success": False, "error": msg}
         
-        # 简化返回数据
+        # 简化返回数据（适配新的 items 结构）
         simplified = []
         for note in notes[:num]:
-            simplified.append({
-                'id': note.get('id', ''),
-                'title': note.get('displayTitle', '') or note.get('title', ''),
-                'desc': note.get('desc', ''),
-                'nickname': note.get('user', {}).get('nickname', ''),
-                'liked_count': note.get('interactInfo', {}).get('likedCount', 0),
-                'type': note.get('type', 'normal'),
-                'cover': note.get('cover', {}).get('urlDefault', ''),
-            })
+            # 新 API 返回格式: {id, model_type, note_card: {...}}
+            # 兼容旧格式: {id, title, desc, user: {...}}
+            if 'note_card' in note:
+                nc = note['note_card']
+                interact = nc.get('interact_info', {})
+                user = nc.get('user', {})
+                images = nc.get('image_list', [])
+                cover = ''
+                for img in images:
+                    cover = img.get('url_default', '') or img.get('url_pre', '') or cover
+                    if cover:
+                        break
+                simplified.append({
+                    'id': note.get('id', ''),
+                    'title': nc.get('display_title', '') or nc.get('title', ''),
+                    'desc': nc.get('desc', '')[:100] if nc.get('desc') else '',
+                    'nickname': user.get('nick_name', '') or user.get('nickname', ''),
+                    'liked_count': interact.get('liked_count', '0'),
+                    'collected_count': interact.get('collected_count', '0'),
+                    'comment_count': interact.get('comment_count', '0'),
+                    'type': nc.get('type', 'normal'),
+                    'cover': cover,
+                    'time': nc.get('time', ''),
+                })
+            else:
+                simplified.append({
+                    'id': note.get('id', ''),
+                    'title': note.get('display_title', '') or note.get('title', ''),
+                    'desc': note.get('desc', '')[:100] if note.get('desc') else '',
+                    'nickname': note.get('user', {}).get('nick_name', '') or note.get('user', {}).get('nickname', ''),
+                    'liked_count': note.get('interact_info', {}).get('liked_count', 0),
+                    'collected_count': note.get('interact_info', {}).get('collected_count', 0),
+                    'comment_count': note.get('interact_info', {}).get('comment_count', 0),
+                    'type': note.get('type', 'normal'),
+                    'cover': note.get('cover', {}).get('url_default', '') or note.get('cover', {}).get('urlDefault', ''),
+                    'time': note.get('time', ''),
+                })
         
         return {"success": True, "data": simplified, "count": len(simplified)}
     except Exception as e:
