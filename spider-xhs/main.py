@@ -128,7 +128,7 @@ if __name__ == '__main__':
 
     # 1 爬取列表的所有笔记信息 笔记链接 如下所示 注意此url会过期！
     notes = [
-        r'https://www.xiaohongshu.com/explore/683fe17f0000000023017c6a?xsec_token=ABBr_cMzallQeLyKSRdPk9fwzA0torkbT_ubuQP1ayvKA=&xsec_source=pc_user',
+        r'https://www.xiaohongshu.com/explore/69b4ee7d0000000022002dd8?xsec_token=ABJWIrPnyrVq_5V5HS2zT4C-9qpWk7E0VtZvvuWZK7h-k=&xsec_source=pc_feed',
     ]
     data_spider.spider_some_note(notes, cookies_str, base_path, 'all', 'test')
 

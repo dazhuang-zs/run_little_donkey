@@ -1,6 +1,12 @@
 import json
-
+import os
+import sys
 import execjs
+
+script_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.dirname(script_dir)
+node_modules_path = os.path.join(project_root, 'node_modules')
+os.environ['NODE_PATH'] = node_modules_path
 
 try:
     js = execjs.compile(open(r'../static/xhs_creator_xs.js', 'r', encoding='utf-8').read())

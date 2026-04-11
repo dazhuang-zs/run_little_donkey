@@ -1,8 +1,15 @@
 import json
 import math
 import random
+import os
+import sys
 import execjs
 from xhs_utils.cookie_util import trans_cookies
+
+script_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.dirname(script_dir)
+node_modules_path = os.path.join(project_root, 'node_modules')
+os.environ['NODE_PATH'] = node_modules_path
 
 try:
     js = execjs.compile(open(r'../static/xhs_xs_xsc_56.js', 'r', encoding='utf-8').read())
