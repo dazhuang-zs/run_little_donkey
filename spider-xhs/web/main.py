@@ -520,6 +520,125 @@ async def check_status():
     }
 
 
+def generate_markdown(note_data: dict, comments: list) -> str:
+    """生成 Markdown 格式的笔记导出内容"""
+    lines = []
+    
+    # 标题
+    lines.append("# 小红书笔记分析")
+    lines.append("")
+    
+    # 笔记信息
+    lines.append("## 笔记信息")
+    lines.append(f"- **标题**: {note_data.get('title', 'N/A')}")
+    lines.append(f"- **作者**: {note_data.get('user_nickname', 'N/A')}")
+    lines.append(f"- **发布时间**: {note_data.get('create_time', 'N/A')}")
+    lines.append(f"- **链接**: {note_data.get('url', 'N/A')}")
+    lines.append(f"- **点赞**: {note_data.get('liked_count', 0)} | **收藏**: {note_data.get('collected_count', 0)} | **评论**: {len(comments)}")
+    lines.append("")
+    lines.append("---")
+    lines.append("")
+    
+    # 正文
+    lines.append("## 正文")
+    lines.append("")
+    desc = note_data.get('desc', '')
+    if desc:
+        lines.append(desc)
+    else:
+        lines.append("（无正文内容）")
+    lines.append("")
+    lines.append("---")
+    lines.append("")
+    
+    # 评论数据
+    lines.append("## 评论数据")
+    lines.append("")
+    
+    if not comments:
+        lines.append("（暂无评论）")
+    else:
+        for idx, comment in enumerate(comments, 1):
+            lines.append(f"### 评论 #{idx}")
+            lines.append(f"- **用户**: {comment.get('user_nickname', 'N/A')}")
+            lines.append(f"- **内容**: {comment.get('content', '')}")
+            lines.append(f"- **点赞**: {comment.get('liked_count', 0)}")
+            lines.append(f"- **时间**: {comment.get('create_time', 'N/A')}")
+            
+            sub_comments = comment.get('sub_comments', [])
+            lines.append(f"- **二级回复**: {len(sub_comments)}条")
+            lines.append("")
+            
+            # 二级评论
+            if sub_comments:
+                for sub_idx, sub in enumerate(sub_comments, 1):
+                    lines.append(f"#### 回复 #{idx}-{sub_idx}")
+                    lines.append(f"- **用户**: {sub.get('user_nickname', 'N/A')}")
+                    lines.append(f"- **内容**: {sub.get('content', '')}")
+                    lines.append(f"- **点赞**: {sub.get('liked_count', 0)}")
+                    lines.append(f"- **时间**: {sub.get('create_time', 'N/A')}")
+                    lines.append("")
+    
+    lines.append("---")
+    lines.append("")
+    lines.append("*导出时间: " + __import__('datetime').datetime.now().strftime("%Y-%m-%d %H:%M:%S") + "*")
+    
+    return "\n".join(lines)
+
+
+@app.post("/api/export/markdown")
+async def export_markdown(note_url: str = Form(...)):
+    """导出笔记和评论为 Markdown 文件"""
+    cookie = load_cookie()
+    if not cookie:
+        raise HTTPException(status_code=400, detail="请先配置 Cookie")
+    
+    try:
+        # 获取笔记详情
+        success, msg, note_info = xhs_apis.get_note_info(note_url, cookie)
+        if not success:
+            return {"success": False, "error": msg}
+        
+        note_data = parse_note_info(note_info)
+        if not note_data:
+            return {"success": False, "error": "解析笔记数据失败"}
+        
+        note_data['url'] = note_url
+        
+        # 获取评论
+        success, msg, comments = xhs_apis.get_note_all_comment(note_url, cookie)
+        if not success:
+            return {"success": False, "error": msg}
+        
+        parsed_comments = parse_comment(comments)
+        
+        # 生成 Markdown
+        markdown_content = generate_markdown(note_data, parsed_comments)
+        
+        # 生成文件名
+        safe_title = re.sub(r'[^\w\u4e00-\u9fff]+', '_', note_data.get('title', '未命名'))[:30]
+        note_id = note_data.get('note_id', 'unknown')
+        timestamp = __import__('datetime').datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"小红书_{safe_title}_{note_id}_{timestamp}.md"
+        
+        # 返回文件下载
+        from fastapi.responses import StreamingResponse
+        from io import BytesIO
+        
+        buffer = BytesIO(markdown_content.encode('utf-8'))
+        
+        return StreamingResponse(
+            buffer,
+            media_type="text/markdown; charset=utf-8",
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return {"success": False, "error": str(e)}
+
+
 # ==================== 启动 ====================
 if __name__ == "__main__":
     print("=" * 50)
