@@ -696,7 +696,11 @@ class XHS_Apis():
             headers, cookies, data = generate_request_params(cookies_str, splice_api, '', 'GET')
             response = requests.get(self.base_url + splice_api, headers=headers, cookies=cookies, proxies=proxies)
             res_json = response.json()
-            success, msg = res_json["success"], res_json["msg"]
+            success, msg = res_json["success"], res_json.get("msg", "")
+            # 限流时 data 为空，跳过而不报错
+            if res_json.get("data") is None and res_json.get("code") == 300013:
+                success = True
+                msg = "rate_limited_skip"
         except Exception as e:
             success = False
             msg = str(e)
@@ -716,8 +720,13 @@ class XHS_Apis():
             inner_comment_list = []
             while True:
                 success, msg, res_json = self.get_note_inner_comment(comment, cursor, xsec_token, cookies_str, proxies)
+                # 限流时跳过该评论的二级评论，不中断整个流程
+                if msg == "rate_limited_skip":
+                    break
                 if not success:
                     raise Exception(msg)
+                if not res_json.get("data"):
+                    break
                 comments = res_json["data"]["comments"]
                 if 'cursor' in res_json["data"]:
                     cursor = str(res_json["data"]["cursor"])
