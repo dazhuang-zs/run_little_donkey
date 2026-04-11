@@ -627,10 +627,13 @@ async def export_markdown(note_url: str = Form(...)):
         
         buffer = BytesIO(markdown_content.encode('utf-8'))
         
+        # URL编码文件名，解决中文文件名问题
+        safe_filename = urllib.parse.quote(filename)
+        
         return StreamingResponse(
             buffer,
             media_type="text/markdown; charset=utf-8",
-            headers={"Content-Disposition": f"attachment; filename={filename}"}
+            headers={"Content-Disposition": f"attachment; filename*=UTF-8''{safe_filename}"}
         )
         
     except Exception as e:
