@@ -30,3 +30,9 @@ ENV/
 env.bak/
 venv.bak/
 
+
+# 测试 Cookie（不要提交）
+data/cookie.txt
+
+# 节点模块
+node_modules/

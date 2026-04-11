@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>评论获取 - 小红书数据平台</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+        }
+        .nav {
+            background: white;
+            padding: 15px 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .nav a { color: #666; text-decoration: none; padding: 8px 15px; border-radius: 6px; }
+        .nav a:hover { background: #f0f0f0; }
+        .nav .brand { font-size: 1.2rem; font-weight: bold; color: #fe2c55; }
+        .container { max-width: 1000px; margin: 40px auto; padding: 0 20px; }
+        
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            margin-bottom: 20px;
+        }
+        h1 { font-size: 1.6rem; color: #333; margin-bottom: 20px; }
+        
+        .input-group { display: flex; gap: 15px; margin-bottom: 20px; }
+        input[type="text"] { flex: 1; padding: 15px; border: 2px solid #e8e8e8; border-radius: 10px; font-size: 1rem; }
+        input:focus { outline: none; border-color: #fe2c55; }
+        
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #fe2c55 0%, #ff6b81 100%);
+            color: white;
+        }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 5px 20px rgba(254,44,85,0.4); }
+        .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+        
+        .loading { text-align: center; padding: 40px; color: #666; display: none; }
+        .spinner {
+            width: 40px; height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #fe2c55;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        .result { display: none; }
+        .error-box {
+            background: #ffebee;
+            border-left: 4px solid #fe2c55;
+            padding: 15px 20px;
+            border-radius: 0 10px 10px 0;
+            color: #c62828;
+            margin-bottom: 20px;
+        }
+        
+        .stats-bar {
+            display: flex;
+            gap: 30px;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            margin-bottom: 20px;
+            color: white;
+        }
+        .stats-bar .stat { text-align: center; }
+        .stats-bar .stat-value { font-size: 1.5rem; font-weight: bold; }
+        .stats-bar .stat-label { font-size: 0.85rem; opacity: 0.9; }
+        
+        .comment-list { display: flex; flex-direction: column; gap: 15px; }
+        
+        .comment-item {
+            padding: 20px;
+            background: #fafafa;
+            border-radius: 12px;
+            border-left: 4px solid #fe2c55;
+        }
+        .comment-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .comment-user { font-weight: bold; color: #333; }
+        .comment-time { font-size: 0.85rem; color: #999; }
+        .comment-content {
+            color: #333;
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+        .comment-footer {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            font-size: 0.85rem;
+            color: #999;
+        }
+        .comment-footer span { display: flex; align-items: center; gap: 5px; }
+        
+        .sub-comments {
+            margin-top: 15px;
+            padding-left: 20px;
+            border-left: 2px solid #eee;
+        }
+        .sub-comment {
+            padding: 12px;
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+        .sub-comment:last-child { margin-bottom: 0; }
+        .sub-comment-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+        .sub-comment-user { font-weight: 500; font-size: 0.9rem; color: #666; }
+        .sub-comment-content { font-size: 0.9rem; color: #333; }
+    </style>
+</head>
+<body>
+    <nav class="nav">
+        <a href="/" class="brand">📕 小红书数据平台</a>
+        <div>
+            <a href="/">首页</a>
+            <a href="/config">配置</a>
+            <a href="/note">笔记爬取</a>
+            <a href="/comments" style="background:#fff0f3;color:#fe2c55;">评论</a>
+            <a href="/search">搜索</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="card">
+            <h1>💬 评论获取</h1>
+            <form id="scrapeForm">
+                <div class="input-group">
+                    <input type="text" id="noteUrl" placeholder="输入小红书笔记链接" required>
+                    <button type="submit" class="btn btn-primary" id="submitBtn">🔍 获取评论</button>
+                </div>
+            </form>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>正在获取评论，请稍候...</p>
+            </div>
+
+            <div id="errorBox" class="error-box" style="display:none;"></div>
+
+            <div class="result" id="result">
+                <div class="stats-bar">
+                    <div class="stat">
+                        <div class="stat-value" id="totalCount">0</div>
+                        <div class="stat-label">总评论数</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value" id="pageCount">0</div>
+                        <div class="stat-label">一级评论</div>
+                    </div>
+                </div>
+                <div class="comment-list" id="commentList"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('scrapeForm');
+        const loading = document.getElementById('loading');
+        const result = document.getElementById('result');
+        const errorBox = document.getElementById('errorBox');
+        const submitBtn = document.getElementById('submitBtn');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const noteUrl = document.getElementById('noteUrl').value.trim();
+            if (!noteUrl) return;
+
+            loading.style.display = 'block';
+            result.style.display = 'none';
+            errorBox.style.display = 'none';
+            submitBtn.disabled = true;
+
+            try {
+                const response = await fetch('/api/comments', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: `note_url=${encodeURIComponent(noteUrl)}`
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    renderResult(data.data, data.count);
+                } else {
+                    showError(data.error || '获取失败');
+                }
+            } catch (err) {
+                showError('请求失败: ' + err.message);
+            } finally {
+                loading.style.display = 'none';
+                submitBtn.disabled = false;
+            }
+        });
+
+        function showError(msg) {
+            errorBox.textContent = msg;
+            errorBox.style.display = 'block';
+        }
+
+        function renderResult(comments, totalCount) {
+            document.getElementById('totalCount').textContent = totalCount;
+            document.getElementById('pageCount').textContent = comments.length;
+
+            const list = document.getElementById('commentList');
+            list.innerHTML = comments.map(comment => {
+                const subCommentsHtml = comment.sub_comments && comment.sub_comments.length > 0
+                    ? `<div class="sub-comments">
+                        ${comment.sub_comments.map(sub => `
+                            <div class="sub-comment">
+                                <div class="sub-comment-header">
+                                    <span class="sub-comment-user">${sub.userInfo?.nickname || '用户'}</span>
+                                    <span style="font-size:0.8rem;color:#999;">❤️ ${sub.likedCount || 0}</span>
+                                </div>
+                                <div class="sub-comment-content">${sub.content || ''}</div>
+                            </div>
+                        `).join('')}
+                       </div>`
+                    : '';
+
+                return `
+                    <div class="comment-item">
+                        <div class="comment-header">
+                            <span class="comment-user">👤 ${comment.user_nickname || '用户'}</span>
+                            <span class="comment-time">📅 ${comment.create_time || ''}</span>
+                        </div>
+                        <div class="comment-content">${comment.content || ''}</div>
+                        <div class="comment-footer">
+                            <span>❤️ ${comment.liked_count || 0} 赞</span>
+                            ${comment.sub_comments?.length ? `<span>💬 ${comment.sub_comments.length} 条回复</span>` : ''}
+                        </div>
+                        ${subCommentsHtml}
+                    </div>
+                `;
+            }).join('');
+
+            result.style.display = 'block';
+        }
+    </script>
+</body>
+</html>
