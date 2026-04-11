@@ -165,17 +165,34 @@ def parse_note_info(raw_data: dict) -> Optional[dict]:
 
 
 def parse_comment(raw_comments: List[dict]) -> List[dict]:
-    """解析评论数据"""
+    """解析评论数据（适配新 API 字段名）"""
     comments = []
     for comment in raw_comments:
+        # 处理一级评论
+        user_info = comment.get('user_info', {}) or comment.get('userInfo', {})
+        sub_comments_raw = comment.get('sub_comments', []) or comment.get('subComments', [])
+        
+        # 解析二级评论
+        sub_comments = []
+        for sub in sub_comments_raw:
+            sub_user = sub.get('user_info', {}) or sub.get('userInfo', {})
+            sub_comments.append({
+                'comment_id': sub.get('id', ''),
+                'content': sub.get('content', ''),
+                'user_nickname': sub_user.get('nick_name', '') or sub_user.get('nickname', ''),
+                'user_id': sub_user.get('user_id', '') or sub_user.get('userId', ''),
+                'liked_count': sub.get('like_count', 0) or sub.get('likedCount', 0),
+                'create_time': sub.get('create_time', '') or sub.get('createTime', ''),
+            })
+        
         comments.append({
             'comment_id': comment.get('id', ''),
             'content': comment.get('content', ''),
-            'user_nickname': comment.get('userInfo', {}).get('nickname', ''),
-            'user_id': comment.get('userInfo', {}).get('userId', ''),
-            'liked_count': comment.get('likedCount', 0),
-            'create_time': comment.get('createTime', ''),
-            'sub_comments': comment.get('subComments', [])
+            'user_nickname': user_info.get('nick_name', '') or user_info.get('nickname', ''),
+            'user_id': user_info.get('user_id', '') or user_info.get('userId', ''),
+            'liked_count': comment.get('like_count', 0) or comment.get('likedCount', 0),
+            'create_time': comment.get('create_time', '') or comment.get('createTime', ''),
+            'sub_comments': sub_comments
         })
     return comments
 
@@ -329,8 +346,6 @@ async def scrape_note(note_url: str = Form(...)):
         success, msg, note_info = xhs_apis.get_note_info(note_url, cookie)
         if not success:
             return {"success": False, "error": msg}
-        
-        if 'data' in note_info:
         
         # 解析数据
         parsed = parse_note_info(note_info)
