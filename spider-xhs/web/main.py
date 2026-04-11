@@ -188,7 +188,9 @@ app = FastAPI(
 )
 
 # 静态文件和模板
-app.mount("/static", StaticFiles(directory="static"), name="static")
+STATIC_DIR = Path(__file__).parent.parent / "static"
+if STATIC_DIR.exists():
+    app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 templates = Jinja2Templates(directory="templates")
 
 
@@ -329,8 +331,6 @@ async def scrape_note(note_url: str = Form(...)):
         success, msg, note_info = xhs_apis.get_note_info(note_url, cookie)
         if not success:
             return {"success": False, "error": msg}
-        
-        if 'data' in note_info:
         
         # 解析数据
         parsed = parse_note_info(note_info)
