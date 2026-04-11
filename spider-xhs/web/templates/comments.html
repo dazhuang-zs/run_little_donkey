@@ -53,6 +53,14 @@
         .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 5px 20px rgba(254,44,85,0.4); }
         .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
         
+        .btn-secondary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            margin-left: 10px;
+        }
+        .btn-secondary:hover { transform: translateY(-2px); box-shadow: 0 5px 20px rgba(102,126,234,0.4); }
+        .btn-secondary:disabled { opacity: 0.6; cursor: not-allowed; }
+        
         .loading { text-align: center; padding: 40px; color: #666; display: none; }
         .spinner {
             width: 40px; height: 40px;
@@ -168,15 +176,20 @@
             <div id="errorBox" class="error-box" style="display:none;"></div>
 
             <div class="result" id="result">
-                <div class="stats-bar">
-                    <div class="stat">
-                        <div class="stat-value" id="totalCount">0</div>
-                        <div class="stat-label">总评论数</div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                    <div class="stats-bar" style="flex:1; margin-bottom:0;">
+                        <div class="stat">
+                            <div class="stat-value" id="totalCount">0</div>
+                            <div class="stat-label">总评论数</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value" id="pageCount">0</div>
+                            <div class="stat-label">一级评论</div>
+                        </div>
                     </div>
-                    <div class="stat">
-                        <div class="stat-value" id="pageCount">0</div>
-                        <div class="stat-label">一级评论</div>
-                    </div>
+                    <button type="button" class="btn btn-secondary" id="exportBtn" onclick="exportMarkdown()" style="margin-left:20px;">
+                        📥 导出 Markdown
+                    </button>
                 </div>
                 <div class="comment-list" id="commentList"></div>
             </div>
@@ -194,6 +207,8 @@
             e.preventDefault();
             const noteUrl = document.getElementById('noteUrl').value.trim();
             if (!noteUrl) return;
+            
+            currentNoteUrl = noteUrl;
 
             loading.style.display = 'block';
             result.style.display = 'none';
@@ -225,6 +240,56 @@
         function showError(msg) {
             errorBox.textContent = msg;
             errorBox.style.display = 'block';
+        }
+
+        let currentNoteUrl = '';
+        
+        async function exportMarkdown() {
+            if (!currentNoteUrl) {
+                showError('请先获取评论数据');
+                return;
+            }
+            
+            const exportBtn = document.getElementById('exportBtn');
+            exportBtn.disabled = true;
+            exportBtn.textContent = '⏳ 导出中...';
+            
+            try {
+                const response = await fetch('/api/export/markdown', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: `note_url=${encodeURIComponent(currentNoteUrl)}`
+                });
+                
+                if (response.ok) {
+                    // 获取文件名
+                    const disposition = response.headers.get('Content-Disposition');
+                    let filename = '小红书笔记导出.md';
+                    if (disposition) {
+                        const match = disposition.match(/filename=([^;]+)/);
+                        if (match) filename = decodeURIComponent(match[1]);
+                    }
+                    
+                    // 下载文件
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                } else {
+                    const data = await response.json();
+                    showError(data.error || '导出失败');
+                }
+            } catch (err) {
+                showError('导出失败: ' + err.message);
+            } finally {
+                exportBtn.disabled = false;
+                exportBtn.textContent = '📥 导出 Markdown';
+            }
         }
 
         function renderResult(comments, totalCount) {
