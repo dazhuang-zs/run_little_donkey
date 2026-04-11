@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>问鼎中原 - 各省争霸统一天下</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- 主容器 -->
+    <div class="main-container">
+        <!-- 左侧地图区域 -->
+        <div class="map-section">
+            <div id="chinaMap"></div>
+            <!-- 顶部标题 -->
+            <div class="header-overlay">
+                <h1>问鼎中原</h1>
+                <p class="subtitle">各省英雄，谁主沉浮</p>
+            </div>
+        </div>
+        
+        <!-- 右侧PK展示区域 -->
+        <div class="pk-section">
+            <div class="pk-container">
+                <!-- 标题 -->
+                <div class="pk-title">
+                    <span class="pk-label">同时对决</span>
+                </div>
+                
+                <!-- 当前所有对决列表 -->
+                <div class="battles-list" id="battlesList">
+                    <!-- 动态生成 -->
+                </div>
+                
+                <!-- 名人列表 -->
+                <div class="heroes-section">
+                    <div class="heroes-title">参战名人</div>
+                    <div class="heroes-list" id="heroesList">
+                        <!-- 动态生成 -->
+                    </div>
+                </div>
+                
+                <!-- 历史记录 -->
+                <div class="pk-history">
+                    <div class="history-title">战斗记录</div>
+                    <div class="history-list" id="historyList">
+                        <!-- 动态生成 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 最终胜利画面 -->
+    <div id="victoryOverlay" class="victory-overlay">
+        <div class="victory-content">
+            <div class="victory-crown">👑</div>
+            <h2 class="victory-title">天下一统</h2>
+            <div class="victory-province" id="victoryProvince">-</div>
+            <div class="victory-heroes">
+                <h3>风云人物</h3>
+                <div id="victoryHeroesList" class="heroes-scroll"></div>
+            </div>
+            <div id="victoryRadar" class="victory-radar"></div>
+            <div class="victory-particles">
+                <span></span><span></span><span></span>
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/data.js"></script>
+    <script src="js/battle.js"></script>
+    <script src="js/map.js"></script>
+    <script src="js/animation.js"></script>
+</body>
+</html>

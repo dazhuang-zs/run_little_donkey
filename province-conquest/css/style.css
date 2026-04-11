@@ -1,0 +1,683 @@
+/* 全局样式 - 全屏深色背景 */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+    background: linear-gradient(135deg, #0a0a1a 0%, #1a1a2e 100%);
+    color: #fff;
+}
+
+/* 主容器 */
+.main-container {
+    display: flex;
+    width: 100vw;
+    height: 100vh;
+}
+
+/* 左侧地图区域 */
+.map-section {
+    width: 78%;
+    height: 100%;
+    position: relative;
+}
+
+#chinaMap {
+    width: 100%;
+    height: 100%;
+}
+
+/* 顶部标题 */
+.header-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    padding: 25px 35px;
+    background: linear-gradient(180deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.3) 70%, transparent 100%);
+    z-index: 10;
+    text-align: center;
+    pointer-events: none;
+}
+
+.header-overlay h1 {
+    font-size: 36px;
+    font-weight: bold;
+    color: #fff;
+    text-shadow: 
+        0 0 10px rgba(255,215,0,0.5),
+        0 0 30px rgba(255,215,0,0.3),
+        2px 2px 4px rgba(0,0,0,0.8);
+    letter-spacing: 8px;
+    margin-bottom: 6px;
+}
+
+.header-overlay .subtitle {
+    font-size: 14px;
+    color: rgba(255,255,255,0.7);
+    letter-spacing: 4px;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+}
+
+/* 右侧PK展示区域 - 缩小版 */
+.pk-section {
+    width: 22%;
+    height: 100%;
+    background: linear-gradient(180deg, #0f0f23 0%, #1a1a2e 50%, #0f0f23 100%);
+    border-left: 2px solid rgba(255,215,0,0.2);
+    padding: 15px;
+    overflow-y: auto;
+}
+
+.pk-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    gap: 12px;
+}
+
+/* PK标题 */
+.pk-title {
+    text-align: center;
+    padding: 10px;
+    background: rgba(255,215,0,0.05);
+    border: 1px solid rgba(255,215,0,0.2);
+    border-radius: 8px;
+}
+
+.pk-label {
+    font-size: 14px;
+    color: #ffd700;
+    letter-spacing: 4px;
+    text-shadow: 0 0 10px rgba(255,215,0,0.3);
+}
+
+/* 对决列表 */
+.battles-list {
+    flex: 0 0 auto;
+    max-height: 50%;
+    overflow-y: auto;
+    background: rgba(0,0,0,0.2);
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.08);
+}
+
+.battle-item {
+    padding: 8px 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    animation: slideIn 0.3s ease;
+}
+
+.battle-item:last-child {
+    border-bottom: none;
+}
+
+@keyframes slideIn {
+    from { opacity: 0; transform: translateX(-10px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+/* 对决头部 */
+.battle-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.battle-heroes {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 6px;
+    gap: 10px;
+}
+
+.battle-hero-side {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.battle-hero-side.left {
+    align-items: flex-start;
+}
+
+.battle-hero-side.right {
+    align-items: flex-end;
+}
+
+.battle-mini-hero {
+    font-size: 9px;
+    padding: 2px 6px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+.battle-mini-hero-name {
+    font-weight: 600;
+}
+
+.battle-mini-hero-title {
+    color: rgba(255,215,0,0.5);
+    margin-left: 3px;
+}
+
+.attacker-name,
+.defender-name {
+    font-size: 13px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.vs-badge {
+    font-size: 10px;
+    color: rgba(255,255,255,0.45);
+    background: rgba(255,255,255,0.06);
+    padding: 1px 6px;
+    border-radius: 4px;
+    letter-spacing: 1px;
+}
+
+/* 维度对比条 */
+.dimension-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    margin-bottom: 6px;
+}
+
+.dim-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.dim-val {
+    font-size: 10px;
+    color: rgba(255,255,255,0.5);
+    width: 28px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.dim-val.left {
+    text-align: right;
+}
+
+.dim-val.right {
+    text-align: left;
+}
+
+.dim-val.win {
+    color: #ffd700;
+    font-weight: 700;
+}
+
+.dim-bar-wrap {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    height: 14px;
+    position: relative;
+    background: rgba(255,255,255,0.04);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.dim-fill {
+    height: 100%;
+    transition: width 0.3s ease;
+    opacity: 0.7;
+}
+
+.dim-fill.left {
+    border-radius: 3px 0 0 3px;
+}
+
+.dim-fill.right {
+    border-radius: 0 3px 3px 0;
+}
+
+.dim-label {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 9px;
+    color: rgba(255,255,255,0.7);
+    text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+    z-index: 1;
+    white-space: nowrap;
+    letter-spacing: 1px;
+}
+
+/* 对决得分 */
+.battle-score {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding-top: 5px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+}
+
+.score-text {
+    font-size: 12px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.8);
+    letter-spacing: 2px;
+}
+
+.winner-badge {
+    font-size: 10px;
+    color: #4ade80;
+    font-weight: 600;
+    background: rgba(74,222,128,0.1);
+    padding: 1px 8px;
+    border-radius: 8px;
+    border: 1px solid rgba(74,222,128,0.25);
+}
+
+.province-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+/* 名人区域 */
+.heroes-section {
+    flex: 1;
+    min-height: 0;
+    background: rgba(0,0,0,0.2);
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.08);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.heroes-title {
+    padding: 8px 10px;
+    font-size: 13px;
+    font-weight: 700;
+    color: rgba(255,215,0,0.9);
+    letter-spacing: 3px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    background: linear-gradient(90deg, rgba(255,215,0,0.1) 0%, transparent 100%);
+    flex-shrink: 0;
+}
+
+.heroes-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* 省份名人分组 */
+.province-heroes-group {
+    animation: fadeIn 0.3s ease;
+    background: rgba(255,255,255,0.02);
+    border-radius: 6px;
+    padding: 6px;
+    border: 1px solid rgba(255,255,255,0.03);
+}
+
+.province-group-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 4px;
+    margin-bottom: 6px;
+}
+
+.province-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    box-shadow: 0 0 8px currentColor;
+}
+
+.province-group-name {
+    font-size: 12px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.95);
+}
+
+.hero-count {
+    font-size: 10px;
+    color: rgba(255,215,0,0.7);
+    margin-left: auto;
+    background: rgba(255,215,0,0.1);
+    padding: 1px 6px;
+    border-radius: 8px;
+}
+
+.hero-cards {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding-left: 4px;
+}
+
+.hero-card {
+    padding: 6px 8px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%);
+    border-radius: 6px;
+    border: 1px solid rgba(255,215,0,0.1);
+    flex: 1 1 calc(50% - 4px);
+    min-width: 0;
+}
+
+.hero-name {
+    font-size: 11px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.95);
+    display: block;
+}
+
+.hero-title {
+    font-size: 9px;
+    color: rgba(255,215,0,0.7);
+    display: block;
+    margin-top: 2px;
+}
+
+.hero-stats-mini {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+    margin-top: 4px;
+}
+
+.stat-tag {
+    font-size: 8px;
+    padding: 1px 4px;
+    border: 1px solid;
+    border-radius: 3px;
+    background: rgba(0,0,0,0.2);
+    line-height: 14px;
+    white-space: nowrap;
+    font-weight: 600;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* 历史记录 */
+.pk-history {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    background: rgba(0,0,0,0.2);
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.08);
+    overflow: hidden;
+}
+
+.history-title {
+    padding: 8px 10px;
+    font-size: 12px;
+    color: rgba(255,215,0,0.8);
+    letter-spacing: 2px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,215,0,0.05);
+    flex-shrink: 0;
+}
+
+.history-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px;
+}
+
+.history-item {
+    padding: 6px 8px;
+    margin-bottom: 4px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 4px;
+    border-left: 2px solid rgba(255,215,0,0.5);
+    font-size: 11px;
+}
+
+.history-winner {
+    color: #4ade80;
+    font-weight: 600;
+}
+
+.history-vs {
+    color: rgba(255,255,255,0.5);
+    margin: 0 6px;
+}
+
+.history-loser {
+    color: rgba(255,255,255,0.7);
+}
+
+/* 最终胜利画面 */
+.victory-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.9);
+    z-index: 300;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+}
+
+.victory-overlay.active {
+    display: flex;
+    opacity: 1;
+}
+
+.victory-content {
+    text-align: center;
+    position: relative;
+    padding: 60px 80px;
+    background: radial-gradient(ellipse at center, rgba(255,215,0,0.1) 0%, transparent 70%);
+}
+
+.victory-crown {
+    font-size: 60px;
+    margin-bottom: 10px;
+    animation: float 3s ease-in-out infinite;
+    filter: drop-shadow(0 0 20px rgba(255,215,0,0.6));
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+.victory-title {
+    font-size: 24px;
+    color: rgba(255,215,0,0.8);
+    letter-spacing: 12px;
+    margin-bottom: 20px;
+    text-shadow: 0 0 20px rgba(255,215,0,0.4);
+}
+
+.victory-province {
+    font-size: 56px;
+    font-weight: bold;
+    color: #ffd700;
+    margin-bottom: 40px;
+    text-shadow: 
+        0 0 20px rgba(255,215,0,0.5),
+        0 0 40px rgba(255,215,0,0.3),
+        0 0 60px rgba(255,215,0,0.2);
+    animation: glow 2s ease-in-out infinite alternate;
+}
+
+@keyframes glow {
+    from { text-shadow: 0 0 20px rgba(255,215,0,0.5), 0 0 40px rgba(255,215,0,0.3); }
+    to { text-shadow: 0 0 30px rgba(255,215,0,0.7), 0 0 60px rgba(255,215,0,0.5), 0 0 90px rgba(255,215,0,0.3); }
+}
+
+.victory-heroes {
+    margin-bottom: 30px;
+}
+
+.victory-heroes h3 {
+    font-size: 14px;
+    color: rgba(255,255,255,0.5);
+    letter-spacing: 4px;
+    margin-bottom: 15px;
+}
+
+.heroes-scroll {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.hero-tag {
+    padding: 8px 16px;
+    background: rgba(255,215,0,0.1);
+    border: 1px solid rgba(255,215,0,0.3);
+    border-radius: 20px;
+    font-size: 14px;
+    color: rgba(255,255,255,0.9);
+    animation: fadeInUp 0.5s ease forwards;
+    opacity: 0;
+}
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.victory-radar {
+    width: 300px;
+    height: 250px;
+    margin: 0 auto;
+}
+
+/* 粒子效果 */
+.victory-particles {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.victory-particles span {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    background: #ffd700;
+    border-radius: 50%;
+    box-shadow: 0 0 10px #ffd700, 0 0 20px #ffd700;
+    animation: particle 4s linear infinite;
+}
+
+.victory-particles span:nth-child(1) { left: 10%; animation-delay: 0s; }
+.victory-particles span:nth-child(2) { left: 25%; animation-delay: 0.5s; }
+.victory-particles span:nth-child(3) { left: 50%; animation-delay: 1s; }
+.victory-particles span:nth-child(4) { left: 75%; animation-delay: 1.5s; }
+.victory-particles span:nth-child(5) { left: 90%; animation-delay: 2s; }
+.victory-particles span:nth-child(6) { left: 40%; animation-delay: 2.5s; }
+
+@keyframes particle {
+    0% {
+        top: 100%;
+        opacity: 0;
+        transform: scale(0);
+    }
+    10% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    90% {
+        opacity: 1;
+    }
+    100% {
+        top: -10%;
+        opacity: 0;
+        transform: scale(0.5);
+    }
+}
+
+/* 滚动条样式 */
+.pk-section::-webkit-scrollbar,
+.battles-list::-webkit-scrollbar,
+.heroes-list::-webkit-scrollbar,
+.history-list::-webkit-scrollbar {
+    width: 4px;
+}
+
+.pk-section::-webkit-scrollbar-track,
+.battles-list::-webkit-scrollbar-track,
+.heroes-list::-webkit-scrollbar-track,
+.history-list::-webkit-scrollbar-track {
+    background: rgba(255,255,255,0.05);
+    border-radius: 2px;
+}
+
+.pk-section::-webkit-scrollbar-thumb,
+.battles-list::-webkit-scrollbar-thumb,
+.heroes-list::-webkit-scrollbar-thumb,
+.history-list::-webkit-scrollbar-thumb {
+    background: rgba(255,215,0,0.3);
+    border-radius: 2px;
+}
+
+.pk-section::-webkit-scrollbar-thumb:hover,
+.battles-list::-webkit-scrollbar-thumb:hover,
+.heroes-list::-webkit-scrollbar-thumb:hover,
+.history-list::-webkit-scrollbar-thumb:hover {
+    background: rgba(255,215,0,0.5);
+}
+
+/* 响应式 */
+@media (max-width: 1200px) {
+    .main-container {
+        flex-direction: column;
+    }
+    
+    .map-section {
+        width: 100%;
+        height: 65%;
+    }
+    
+    .pk-section {
+        width: 100%;
+        height: 35%;
+    }
+    
+    .header-overlay h1 {
+        font-size: 28px;
+        letter-spacing: 6px;
+    }
+}
