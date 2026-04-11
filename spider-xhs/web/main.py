@@ -101,6 +101,11 @@ def parse_note_info(raw_data: dict) -> Optional[dict]:
     """解析笔记原始数据"""
     try:
         note_card = raw_data.get('noteCard', {})
+        if not note_card:
+            items = raw_data.get('items', [])
+            if items and len(items) > 0:
+                note_card = items[0].get('noteCard', {})
+        
         user = note_card.get('user', {})
         
         # 处理图片
@@ -142,6 +147,8 @@ def parse_note_info(raw_data: dict) -> Optional[dict]:
         }
     except Exception as e:
         print(f"解析笔记信息失败: {e}")
+        import traceback
+        traceback.print_exc()
         return None
 
 
@@ -149,6 +156,19 @@ def parse_comment(raw_comments: List[dict]) -> List[dict]:
     """解析评论数据"""
     comments = []
     for comment in raw_comments:
+        sub_comments = []
+        raw_subs = comment.get('subComments', [])
+        for sub in raw_subs:
+            sub_comments.append({
+                'id': sub.get('id', ''),
+                'content': sub.get('content', ''),
+                'userInfo': {
+                    'nickname': sub.get('userInfo', {}).get('nickname', ''),
+                    'userId': sub.get('userInfo', {}).get('userId', '')
+                },
+                'likedCount': sub.get('likedCount', 0),
+                'createTime': sub.get('createTime', '')
+            })
         comments.append({
             'comment_id': comment.get('id', ''),
             'content': comment.get('content', ''),
@@ -156,7 +176,7 @@ def parse_comment(raw_comments: List[dict]) -> List[dict]:
             'user_id': comment.get('userInfo', {}).get('userId', ''),
             'liked_count': comment.get('likedCount', 0),
             'create_time': comment.get('createTime', ''),
-            'sub_comments': comment.get('subComments', [])
+            'sub_comments': sub_comments
         })
     return comments
 
@@ -169,7 +189,9 @@ app = FastAPI(
 )
 
 # 静态文件和模板
-app.mount("/static", StaticFiles(directory="static"), name="static")
+STATIC_DIR = Path(__file__).parent.parent / "static"
+if STATIC_DIR.exists():
+    app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 templates = Jinja2Templates(directory="templates")
 
 
@@ -459,7 +481,7 @@ if __name__ == "__main__":
     print("=" * 50)
     print("🚀 小红书数据平台 Web 服务")
     print("=" * 50)
-    print("📍 访问地址: http://localhost:8080")
+    print("📍 访问地址: http://localhost:8083")
     print("📝 功能页面:")
     print("   - 首页:     /")
     print("   - 配置:     /config")
@@ -469,4 +491,4 @@ if __name__ == "__main__":
     print("   - 用户信息: /user")
     print("=" * 50)
     
-    uvicorn.run(app, host="0.0.0.0", port=8080, reload=False)
+    uvicorn.run(app, host="0.0.0.0", port=8083, reload=False)
