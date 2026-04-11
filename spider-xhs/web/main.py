@@ -521,26 +521,59 @@ async def check_status():
 
 
 def generate_markdown(note_data: dict, comments: list) -> str:
-    """生成 Markdown 格式的笔记导出内容"""
+    """生成 Markdown 格式的笔记导出内容（优化版，适合 LLM 分析）"""
+    import datetime
     lines = []
     
-    # 标题
-    lines.append("# 小红书笔记分析")
+    # ========== LLM 分析提示 ==========
+    lines.append("# 📊 小红书笔记评论分析报告")
     lines.append("")
-    
-    # 笔记信息
-    lines.append("## 笔记信息")
-    lines.append(f"- **标题**: {note_data.get('title', 'N/A')}")
-    lines.append(f"- **作者**: {note_data.get('user_nickname', 'N/A')}")
-    lines.append(f"- **发布时间**: {note_data.get('create_time', 'N/A')}")
-    lines.append(f"- **链接**: {note_data.get('url', 'N/A')}")
-    lines.append(f"- **点赞**: {note_data.get('liked_count', 0)} | **收藏**: {note_data.get('collected_count', 0)} | **评论**: {len(comments)}")
+    lines.append("> **🤖 AI 分析提示**：请分析以下笔记的评论区，从普通用户视角提取有价值的信息，帮助用户：")
+    lines.append("> - 识别真实用户体验 vs 营销/托")
+    lines.append("> - 发现常见问题和踩坑点")
+    lines.append("> - 提取实用的经验和技巧")
+    lines.append("> - 判断笔记内容的可信度")
     lines.append("")
     lines.append("---")
     lines.append("")
     
-    # 正文
-    lines.append("## 正文")
+    # ========== 笔记基础信息 ==========
+    lines.append("## 📝 笔记信息")
+    lines.append("")
+    lines.append(f"| 字段 | 内容 |")
+    lines.append(f"|------|------|")
+    lines.append(f"| 标题 | {note_data.get('title', 'N/A')} |")
+    lines.append(f"| 作者 | {note_data.get('user_nickname', 'N/A')} |")
+    lines.append(f"| 发布时间 | {note_data.get('create_time', 'N/A')} |")
+    lines.append(f"| 笔记链接 | {note_data.get('url', 'N/A')} |")
+    lines.append("")
+    
+    # ========== 互动数据 ==========
+    lines.append("## 📈 互动数据")
+    lines.append("")
+    lines.append(f"| 指标 | 数值 |")
+    lines.append(f"|------|------|")
+    lines.append(f"| 👍 点赞 | {note_data.get('liked_count', 0)} |")
+    lines.append(f"| ⭐ 收藏 | {note_data.get('collected_count', 0)} |")
+    lines.append(f"| 💬 评论 | {len(comments)} |")
+    lines.append("")
+    
+    # 计算互动率
+    likes = int(note_data.get('liked_count', 0) or 0)
+    collects = int(note_data.get('collected_count', 0) or 0)
+    comment_count = len(comments)
+    if likes > 0:
+        ratio = (collects / likes * 100)
+        lines.append(f"> **📌 收藏率**: {ratio:.1f}% （收藏/点赞）")
+        lines.append(f"> - 高收藏率(>50%)通常表示内容干货多、实用性强")
+        lines.append(f"> - 低收藏率(<20%)可能偏娱乐或争议性内容")
+        lines.append("")
+    
+    lines.append("---")
+    lines.append("")
+    
+    # ========== 笔记正文 ==========
+    lines.append("## 📄 笔记正文")
     lines.append("")
     desc = note_data.get('desc', '')
     if desc:
@@ -551,37 +584,78 @@ def generate_markdown(note_data: dict, comments: list) -> str:
     lines.append("---")
     lines.append("")
     
-    # 评论数据
-    lines.append("## 评论数据")
+    # ========== 评论数据（按点赞排序） ==========
+    lines.append("## 💬 评论数据")
     lines.append("")
     
     if not comments:
         lines.append("（暂无评论）")
     else:
-        for idx, comment in enumerate(comments, 1):
-            lines.append(f"### 评论 #{idx}")
-            lines.append(f"- **用户**: {comment.get('user_nickname', 'N/A')}")
-            lines.append(f"- **内容**: {comment.get('content', '')}")
-            lines.append(f"- **点赞**: {comment.get('liked_count', 0)}")
-            lines.append(f"- **时间**: {comment.get('create_time', 'N/A')}")
+        # 按点赞数排序，方便 LLM 快速识别热门观点
+        sorted_comments = sorted(comments, key=lambda x: int(x.get('liked_count', 0) or 0), reverse=True)
+        
+        lines.append(f"**📊 共 {len(comments)} 条一级评论**（按点赞数从高到低排列）")
+        lines.append("")
+        
+        for idx, comment in enumerate(sorted_comments, 1):
+            likes_count = int(comment.get('liked_count', 0) or 0)
+            sub_comments = comment.get('sub_comments', []) or []
             
-            sub_comments = comment.get('sub_comments', [])
-            lines.append(f"- **二级回复**: {len(sub_comments)}条")
+            # 高赞评论标记
+            hot_tag = "🔥" if likes_count >= 10 else ("⭐" if likes_count >= 5 else "")
+            
+            lines.append(f"### {hot_tag} 评论 #{idx} | 👍{likes_count} 赞")
+            lines.append("")
+            lines.append(f"**用户**: {comment.get('user_nickname', 'N/A')} | **时间**: {comment.get('create_time', 'N/A')}")
+            lines.append("")
+            lines.append(f"**内容**:")
+            lines.append(f"{comment.get('content', '')}")
             lines.append("")
             
             # 二级评论
             if sub_comments:
-                for sub_idx, sub in enumerate(sub_comments, 1):
-                    lines.append(f"#### 回复 #{idx}-{sub_idx}")
-                    lines.append(f"- **用户**: {sub.get('user_nickname', 'N/A')}")
-                    lines.append(f"- **内容**: {sub.get('content', '')}")
-                    lines.append(f"- **点赞**: {sub.get('liked_count', 0)}")
-                    lines.append(f"- **时间**: {sub.get('create_time', 'N/A')}")
-                    lines.append("")
+                lines.append(f"> 💬 {len(sub_comments)} 条回复")
+                lines.append("")
+                for sub_idx, sub in enumerate(sub_comments[:5], 1):  # 最多显示5条回复
+                    sub_likes = int(sub.get('liked_count', 0) or 0)
+                    sub_hot = "🔥" if sub_likes >= 5 else ""
+                    lines.append(f"> - {sub.get('user_nickname', '用户')} ({sub_likes}赞): {sub.get('content', '')[:100]}")
+                if len(sub_comments) > 5:
+                    lines.append(f"> - ... 还有 {len(sub_comments) - 5} 条回复未显示")
+                lines.append("")
+            
+            lines.append("---")
+            lines.append("")
+    
+    # ========== LLM 分析引导 ==========
+    lines.append("## 🔍 AI 分析任务")
+    lines.append("")
+    lines.append("请根据以上内容，完成以下分析：")
+    lines.append("")
+    lines.append("### 1️⃣ 舆情概览")
+    lines.append("- 评论区整体情绪是正面、中立还是负面？")
+    lines.append("- 用户对笔记内容的评价如何？")
+    lines.append("")
+    lines.append("### 2️⃣ 踩坑预警 ⚠️")
+    lines.append("- 找出用户提到的常见问题、负面体验、后悔购买等")
+    lines.append("- 识别可能的托或营销号特征")
+    lines.append("")
+    lines.append("### 3️⃣ 实用经验 💡")
+    lines.append("- 提取用户分享的真实经验、使用技巧、注意事项")
+    lines.append("- 记录高质量的补充信息")
+    lines.append("")
+    lines.append("### 4️⃣ 可信度评估")
+    lines.append("- 根据点赞/收藏比判断内容质量")
+    lines.append("- 根据评论内容判断作者是否可信")
+    lines.append("")
+    lines.append("### 5️⃣ 总结建议")
+    lines.append("- 用简洁的语言总结：这个笔记值不值得参考？")
+    lines.append("- 给读者最重要的 3 条建议")
+    lines.append("")
     
     lines.append("---")
-    lines.append("")
-    lines.append("*导出时间: " + __import__('datetime').datetime.now().strftime("%Y-%m-%d %H:%M:%S") + "*")
+    lines.append(f"*导出时间: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}*")
+    lines.append("*📋 格式优化版 - 适合 AI 大模型分析使用*")
     
     return "\n".join(lines)
 
