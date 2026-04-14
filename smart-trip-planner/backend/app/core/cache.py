@@ -53,3 +53,18 @@ class LRUCache:
 poi_cache = LRUCache(max_size=2000, default_ttl=86400)
 distance_cache = LRUCache(max_size=5000, default_ttl=3600)
 geocode_cache = LRUCache(max_size=1000, default_ttl=86400 * 7)
+
+
+def get_poi_cache() -> LRUCache:
+    """获取 POI 缓存实例"""
+    return poi_cache
+
+
+def get_distance_cache() -> LRUCache:
+    """获取距离缓存实例"""
+    return distance_cache
+
+
+def get_geocode_cache() -> LRUCache:
+    """获取地理编码缓存实例"""
+    return geocode_cache

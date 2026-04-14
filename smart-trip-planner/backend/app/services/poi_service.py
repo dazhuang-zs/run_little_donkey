@@ -10,7 +10,11 @@ settings = get_settings()
 
 
 class TencentMapService:
-    """腾讯地图 API 客户端"""
+    """腾讯地图 API 客户端
+
+    注意：使用 httpx.AsyncClient 作为上下文管理器时，每次请求都会创建新连接。
+    对于高并发场景，建议使用依赖注入共享 client 实例。
+    """
 
     BASE_URL = "https://apis.map.qq.com"
 
@@ -29,7 +33,20 @@ class TencentMapService:
         category: str = "景点",
         page_size: int = 10,
     ) -> List[POI]:
-        """POI 搜索"""
+        """POI 搜索
+
+        Args:
+            keyword: 搜索关键词
+            city: 城市名称
+            category: POI 类别
+            page_size: 每页数量
+
+        Returns:
+            POI 列表
+
+        Raises:
+            POISearchError: 搜索失败时抛出
+        """
         cache_key = f"poi:{keyword}:{city}:{category}"
         cached = self._poi_cache.get(cache_key)
         if cached:

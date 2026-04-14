@@ -1,11 +1,7 @@
 """行程数据模型"""
 from pydantic import BaseModel, Field
-from typing import Optional, List, Literal
-from datetime import date
-
-
-class TransportMode(str, Literal["driving", "walking", "transit", "mixed"]):
-    pass
+from typing import Optional, List
+from app.models.poi import TransportMode
 
 
 class TripIntent(BaseModel):
@@ -14,7 +10,7 @@ class TripIntent(BaseModel):
     attractions: List[str]
     hotel_area: Optional[str] = None
     budget_per_night: Optional[int] = Field(None, ge=0)
-    transport_mode: TransportMode = "mixed"
+    transport_mode: TransportMode = TransportMode.MIXED
     food_budget_per_day: Optional[int] = None
     extra_notes: Optional[str] = None
 
