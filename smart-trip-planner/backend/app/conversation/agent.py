@@ -1,17 +1,19 @@
 """行程规划对话 Agent"""
 import json
-import httpx
+import logging
 from typing import List, Optional, Dict, Any
 from app.conversation.store import store
 from app.conversation.message import ToolResult
 from app.services.poi_service import TencentMapService
 from app.services.route_optimizer import RouteOptimizer
 from app.services.report_generator import ReportGenerator
+from app.services.llm_provider import LLMProvider
 from app.models.poi import TransportMode
 from app.core.config import get_settings
+from app.core.exceptions import AIParseError
 
+logger = logging.getLogger(__name__)
 settings = get_settings()
-
 
 # ============ 工具定义 ============
 
@@ -20,8 +22,8 @@ TOOLS = {
         "name": "search_poi",
         "description": "搜索景点、酒店、餐厅等POI地点",
         "parameters": {
-            "keyword": "搜索关键词（如'故宫'、'长城'）",
-            "city": "城市名（如'北京'）",
+            "keyword": "搜索关键词（如故宫、长城）",
+            "city": "城市名（如北京）",
             "category": "POI类别：景点/酒店/餐厅",
         },
     },
@@ -50,92 +52,70 @@ TOOLS = {
     },
 }
 
+# ============ Agent 系统提示词 ============
 
-# ============ Agent 提示词 ============
-
-SYSTEM_PROMPT = """你是智能行程规划助手，叫"小程"。
+SYSTEM_PROMPT = """你是智能行程规划助手，叫小程。
 
 ## 工作流程
-
 你通过调用工具来帮助用户规划旅行。用户可能会：
 1. 提出旅行需求
 2. 追问、修改、调整行程
 3. 询问景点信息
 
 ## 对话状态
-
 对话开始时，用户只提供部分信息（城市、天数、景点偏好）。
 你需要通过多轮对话逐步完善信息。
 
 ## 可用工具
-
-1. **search_poi**: 搜索景点/酒店/餐厅
-   - 搜索结果会返回POI列表（名称、坐标、地址）
-   - 你需要告诉用户搜索结果，让用户确认
-
-2. **get_distance**: 计算两地间的距离
-
-3. **confirm_attractions**: 用户确认景点后，调用此工具锁定景点列表
-
-4. **generate_route**: 景点确认后，生成完整行程路线
+1. search_poi: 搜索景点/酒店/餐厅，返回POI列表
+2. get_distance: 计算两地间的距离
+3. confirm_attractions: 用户确认景点后，锁定景点列表
+4. generate_route: 景点确认后，生成完整行程路线
 
 ## 回复风格
-
-- 亲切、自然，像朋友聊天
+- 亲切自然，像朋友聊天
 - 不要一次性说太多，让用户逐步确认
 - 每轮对话后，给出1-2个建议操作
 - 发现信息不足时，主动询问
 
 ## 状态机
-
-states:
-- 'initialized': 等待用户输入目的地
-- 'gathering_requirements': 收集信息（城市/天数/景点/住宿）
-- 'searching': 搜索中
-- 'confirming': 等待用户确认景点
-- 'planning': 生成路线中
-- 'completed': 行程已完成
+- initialized: 等待用户输入目的地
+- gathering_requirements: 收集信息（城市/天数/景点/住宿）
+- searching: 搜索中
+- confirming: 等待用户确认景点
+- planning: 生成路线中
+- completed: 行程已完成
 
 ## 输出格式
-
-每次回复必须包含：
+每次回复必须包含JSON格式：
 {
   "message": "你对用户说的话",
   "state": "当前状态",
   "suggestions": ["建议用户下一步操作1", "建议2"],
-  "tool_calls": [] // 如果需要调用工具，填工具名和参数
+  "tool_calls": []  // 如需调用工具，填工具名和参数
 }
-
-用户确认景点后，返回完整行程。
 """
 
 
 class TripAgent:
-    """
-    行程规划对话 Agent
+    """行程规划对话 Agent
 
     支持多轮对话，根据用户输入决定：
     1. 调用什么工具
     2. 更新什么状态
     3. 给用户什么回复
+
+    LLM 层通过 LLMProvider 统一调用，支持 DeepSeek / OpenAI / 硅基流动。
+    无 LLM 时降级为规则引擎。
     """
 
     def __init__(self):
         self.map_service = TencentMapService()
         self.optimizer = RouteOptimizer(self.map_service)
         self.report_gen = ReportGenerator()
+        self.llm = LLMProvider()
 
     async def chat(self, message: str, conversation_id: Optional[str] = None) -> dict:
-        """
-        处理用户消息
-
-        Args:
-            message: 用户输入
-            conversation_id: 对话ID（None表示新对话）
-
-        Returns:
-            Agent 回复
-        """
         # 1. 创建或获取对话
         if conversation_id:
             conv = store.get(conversation_id)
@@ -153,8 +133,12 @@ class TripAgent:
         state = store.get_state(conversation_id)
         history = store.get_conversation_summary(conversation_id)
 
-        # 4. 调用 AI 决定下一步
-        response = await self._llm_decide(message, state, history)
+        # 4. 调用 AI 决定下一步（优先LLM，降级规则引擎）
+        try:
+            response = await self._llm_decide(message, state, history)
+        except AIParseError:
+            logger.warning("[TripAgent] LLM 不可用，降级为规则引擎")
+            response = self._rule_based_decide(message, state)
 
         # 5. 执行工具调用
         tool_results = []
@@ -163,7 +147,6 @@ class TripAgent:
                 result = await self._execute_tool(tc["name"], tc.get("arguments", {}))
                 tool_results.append(result)
 
-                # 工具执行后更新状态
                 if tc["name"] == "search_poi" and result["success"]:
                     await self._update_after_search(conversation_id, result, state)
 
@@ -187,18 +170,12 @@ class TripAgent:
             "suggestions": response.get("suggestions", []),
         }
 
-    async def _llm_decide(
-        self, message: str, state: dict, history: str
-    ) -> dict:
-        """
-        调用大模型决定下一步操作
-        """
+    async def _llm_decide(self, message: str, state: dict, history: str) -> dict:
+        """通过 LLM 决定下一步操作"""
         current_state = state.get("state", "initialized")
         attractions = state.get("attractions", [])
 
-        # 构建提示词
-        prompt = f"""
-当前状态: {current_state}
+        prompt = f"""当前状态: {current_state}
 对话历史:
 {history}
 
@@ -224,54 +201,38 @@ class TripAgent:
 如果没有足够信息（如不知道城市），先用自然语言询问用户。
 如果景点已确认且用户要求生成路线，调用generate_route。
 """
-
-        if not settings.OPENAI_API_KEY:
-            # 无API时，使用规则引擎
-            return self._rule_based_decide(message, state)
-
         try:
-            async with httpx.AsyncClient() as client:
-                resp = await client.post(
-                    f"{settings.OPENAI_BASE_URL}/chat/completions",
-                    headers={
-                        "Authorization": f"Bearer {settings.OPENAI_API_KEY}",
-                        "Content-Type": "application/json",
-                    },
-                    json={
-                        "model": settings.OPENAI_MODEL,
-                        "messages": [
-                            {"role": "system", "content": SYSTEM_PROMPT},
-                            {"role": "user", "content": prompt},
-                        ],
-                        "temperature": 0.7,
-                    },
-                    timeout=30.0,
-                )
-                resp.raise_for_status()
-                data = resp.json()
-                content = data["choices"][0]["message"]["content"]
-
-            # 解析 JSON
-            json_str = content.strip()
+            response = await self.llm.chat(
+                prompt=prompt,
+                system=SYSTEM_PROMPT,
+                temperature=0.7,
+            )
+            json_str = response.strip()
             if "```json" in json_str:
                 json_str = json_str.split("```json")[1].split("```")[0]
             return json.loads(json_str)
-
+        except AIParseError:
+            raise
+        except json.JSONDecodeError as e:
+            logger.error(f"[_llm_decide] JSON解析失败: {e}")
+            raise AIParseError("Agent LLM 返回格式异常")
         except Exception as e:
-            return self._rule_based_decide(message, state)
+            logger.error(f"[_llm_decide] 未知错误: {e}", exc_info=True)
+            raise AIParseError(f"Agent LLM 调用失败: {e}")
 
     def _rule_based_decide(self, message: str, state: dict) -> dict:
-        """
-        基于规则的决策引擎（无API时使用）
-        """
+        """基于规则的决策引擎（无API时使用）"""
         import re
 
         msg = message
         current_state = state.get("state", "initialized")
         attractions = state.get("attractions", [])
 
-        # 提取城市
-        cities = ["北京", "上海", "广州", "深圳", "杭州", "成都", "重庆", "西安", "南京", "苏州", "武汉", "厦门"]
+        cities = [
+            "北京", "上海", "广州", "深圳", "杭州", "成都", "重庆",
+            "西安", "南京", "苏州", "武汉", "厦门", "青岛", "大连",
+            "天津", "郑州", "长沙", "昆明", "哈尔滨", "长春",
+        ]
         found_city = state.get("city")
         if not found_city:
             for c in cities:
@@ -279,49 +240,41 @@ class TripAgent:
                     found_city = c
                     break
 
-        # 提取天数
         day_match = re.search(r"(\d+)天", msg)
         days = state.get("days") or (int(day_match.group(1)) if day_match else None)
 
-        # 提取景点
         new_attractions = []
         parts = re.split(r"[，,、\n]", msg)
         for p in parts:
             p = p.strip()
-            # 过滤掉太短的词
             if p and len(p) >= 2 and p not in cities and not re.search(r"\d", p):
                 new_attractions.append(p)
 
-        # 合并景点
         if new_attractions:
             all_attrs = list(dict.fromkeys(attractions + new_attractions))
         else:
             all_attrs = attractions
 
-        # 决策逻辑
         if current_state == "initialized" or not found_city:
-            # 需要知道城市
             return {
-                "message": "好的！很高兴帮你规划行程😊\n\n请告诉我：你想去哪里玩？城市和大概天数是多少？\n\n比如："北京3天" 或 "上海2天，想去外滩和城隍庙"",
+                "message": "好的！很高兴帮你规划行程，请告诉我：你想去哪里玩？城市和大概天数是多少？",
                 "state": "gathering_requirements",
                 "suggestions": ["北京3天", "上海2天外滩城隍庙"],
                 "tool_calls": [],
             }
 
         if found_city and not all_attrs:
-            # 知道城市，不知道景点 → 询问景点
             return {
-                "message": f"好的！{found_city}{days or ''}天游 🚗\n\n你想去哪些景点呢？可以告诉我1-3个你必去的，或者告诉我你喜欢的风格（比如"历史古迹"、"自然风光"），我来帮你推荐！",
+                "message": f"好的！{found_city} {days or ''}天游。你想去哪些景点呢？可以告诉我1-3个你必去的，或者告诉我你喜欢的风格，我来帮你推荐！",
                 "state": "gathering_requirements",
                 "suggestions": ["故宫、天安门、长城", "外滩、城隍庙、陆家嘴"],
                 "tool_calls": [],
             }
 
         if all_attrs and found_city:
-            # 有关键信息，开始搜索景点
             keyword = all_attrs[0] if all_attrs else found_city
             return {
-                "message": f"好的！{found_city} {all_attrs}，我来帮你搜一下这些景点 👇",
+                "message": f"好的！{found_city} {all_attrs}，我来帮你搜一下这些景点。",
                 "state": "searching",
                 "suggestions": ["继续补充景点", "确认这些景点，开始规划"],
                 "tool_calls": [
@@ -333,7 +286,6 @@ class TripAgent:
                 ],
             }
 
-        # 默认回复
         return {
             "message": "我理解了你的需求，让我帮你处理一下...",
             "state": current_state,
@@ -354,7 +306,11 @@ class TripAgent:
                 return ToolResult(
                     name=name,
                     success=True,
-                    data={"pois": [{"name": p.name, "lat": p.lat, "lng": p.lng, "address": p.address, "rating": p.rating} for p in pois]},
+                    data={"pois": [
+                        {"name": p.name, "lat": p.lat, "lng": p.lng,
+                         "address": p.address, "rating": p.rating}
+                        for p in pois
+                    ]},
                 )
 
             elif name == "get_distance":
@@ -369,7 +325,10 @@ class TripAgent:
                     return ToolResult(
                         name=name,
                         success=True,
-                        data={"distance_meters": info.distance_meters, "duration_seconds": info.duration_seconds},
+                        data={
+                            "distance_meters": info.distance_meters,
+                            "duration_seconds": info.duration_seconds,
+                        },
                     )
                 return ToolResult(name=name, success=False, error="距离计算失败")
 
@@ -383,10 +342,9 @@ class TripAgent:
                 return ToolResult(name=name, success=True, data={"confirmed": poi_ids})
 
             elif name == "generate_route":
-                # 生成完整路线
                 cid = arguments.get("conversation_id", "")
-                state = store.get_state(cid)
-                pois_str = state.get("confirmed_pois", [])
+                s = store.get_state(cid)
+                pois_str = s.get("confirmed_pois", [])
                 if isinstance(pois_str, str):
                     pois_list = json.loads(pois_str)
                 else:
@@ -395,36 +353,24 @@ class TripAgent:
                 if not pois_list:
                     return ToolResult(name=name, success=False, error="未确认景点，请先搜索并确认景点")
 
-                # 搜索POI
                 all_pois = []
                 for poi_info in pois_list:
-                    if isinstance(poi_info, dict):
-                        keyword = poi_info.get("name", "")
-                    else:
-                        keyword = str(poi_info)
-                    results = await self.map_service.search_poi(keyword, state.get("city", ""), "景点")
+                    keyword = poi_info.get("name") if isinstance(poi_info, dict) else str(poi_info)
+                    results = await self.map_service.search_poi(keyword, s.get("city", ""), "景点")
                     if results:
                         all_pois.append(results[0])
 
                 if not all_pois:
                     return ToolResult(name=name, success=False, error="无法获取景点详情")
 
-                # 优化路线
                 route, segments = await self.optimizer.optimize(
                     pois=all_pois,
-                    mode=TransportMode(state.get("transport_mode", "mixed")),
+                    mode=TransportMode(s.get("transport_mode", "mixed")),
                 )
 
-                # 生成报告
-                trip_intent = {
-                    "city": state.get("city", ""),
-                    "days": state.get("days", 1),
-                    "attractions": [p.name for p in route],
-                }
-                from app.models.trip import TripIntent
                 from app.services.ai_parser import AIParserService
                 ai = AIParserService()
-                intent = await ai.parse(f"{trip_intent['city']}{trip_intent['days']}天")
+                intent = await ai.parse(f"{s.get('city', '')}{s.get('days', 1)}天")
                 trip_plan = self.report_gen.generate(intent, route, segments, [])
 
                 return ToolResult(
@@ -443,8 +389,6 @@ class TripAgent:
         pois = result.data.get("pois", [])
         if not pois:
             return
-
-        # 保存搜索结果到对话状态
         store.update(
             conversation_id,
             search_results=json.dumps(pois),
