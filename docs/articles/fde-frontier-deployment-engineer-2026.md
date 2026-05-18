@@ -115,13 +115,17 @@ FDE是离客户最近的技术角色。他不光要设计方案，还要**驻场
 
 ```bash
 # vLLM 部署示例（最常用）
+# 注意：先安装 PyTorch，再安装 vLLM（两个分开装）
+pip install torch --index-url https://download.pytorch.org/whl/cu121
 pip install vllm
 
-# 启动推理服务
+# 启动推理服务（Qwen3-32B 需要 ~64GB 显存，4张A100 40GB 可跑）
 python -m vllm.entrypoints.openai.api_server \
   --model Qwen/Qwen3-32B \
   --tensor-parallel-size 4 \
   --gpu-memory-utilization 0.9 \
+  --max-model-len 4096 \
+  --trust-remote-code \
   --port 8000
 
 # 测试部署是否成功
@@ -161,15 +165,19 @@ if __name__ == "__main__":
 
 ```dockerfile
 # Dockerfile for model deployment
+# 基于 CUDA 12.1 + Ubuntu 22.04
 FROM nvidia/cuda:12.1.0-devel-ubuntu22.04
 
 WORKDIR /app
 
-# 安装Python和依赖
-RUN apt-get update && apt-get install -y python3.10 python3-pip
-RUN pip install vllm torch --index-url https://download.pytorch.org/whl/cu121
+# 安装Python3和pip（Ubuntu22.04默认Python3.10）
+RUN apt-get update && apt-get install -y python3 python3-pip git curl
 
-# 复制启动脚本
+# 分开安装：先装torch，再装vLLM
+RUN pip3 install torch --index-url https://download.pytorch.org/whl/cu121
+RUN pip3 install vllm
+
+# 复制启动脚本（下方提供start.sh内容）
 COPY start.sh /app/
 RUN chmod +x /app/start.sh
 
@@ -177,8 +185,27 @@ EXPOSE 8000
 CMD ["/app/start.sh"]
 ```
 
+```bash
+#!/bin/bash
+# start.sh - vLLM启动脚本
+set -e
+
+# 默认值
+MODEL=${MODEL_PATH:-"Qwen/Qwen3-32B"}
+PORT=${PORT:-8000}
+GPU_MEM=${GPU_MEM:-0.90}
+
+python3 -m vllm.entrypoints.openai.api_server \
+  --model "$MODEL" \
+  --tensor-parallel-size 4 \
+  --gpu-memory-utilization "$GPU_MEM" \
+  --max-model-len 4096 \
+  --trust-remote-code \
+  --port "$PORT"
+```
+
 ```yaml
-# k8s-deployment.yaml - Kubernetes部署配置
+# k8s-deployment.yaml - Kubernetes部署配置（生产级）
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -193,17 +220,45 @@ spec:
       labels:
         app: qwen3
     spec:
+      # 调度到GPU节点（按实际情况修改标签）
+      nodeSelector:
+        accelerator: nvidia-a100
+      tolerations:
+      - key: "nvidia.com/gpu"
+        operator: "Exists"
+        effect: "NoSchedule"
       containers:
       - name: vllm
         image: my-registry/vllm-qwen3:latest
         resources:
+          requests:
+            nvidia.com/gpu: 4
+            memory: "32Gi"
+            cpu: "8"
           limits:
             nvidia.com/gpu: 4
+            memory: "64Gi"
+            cpu: "16"
         env:
         - name: MODEL_PATH
           value: "/models/Qwen3-32B"
         ports:
         - containerPort: 8000
+        # 健康检查（必须配置，否则Pod可能未就绪就接收流量）
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          timeoutSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 120
+          periodSeconds: 30
+          timeoutSeconds: 5
 ---
 apiVersion: v1
 kind: Service
@@ -217,6 +272,8 @@ spec:
     targetPort: 8000
   type: LoadBalancer
 ```
+
+> ⚠️ 注意：2个副本 × 4 GPU = 集群需要至少8张A100。如果GPU资源不足，改为 `replicas: 1`。
 
 ### 5.3 GPU环境调试（FDE的日常）
 
